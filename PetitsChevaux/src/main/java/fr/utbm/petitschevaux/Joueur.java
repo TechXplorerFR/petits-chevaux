@@ -41,6 +41,31 @@ public class Joueur {
     }
 
 
+    public Joueur(String nom, Couleur couleur) {
+    }
 
-    public Joueur(String nom, Couleur couleur) {}
+    public void sortirCheval(){
+        for(Cheval cheval : chevaux){
+            cheval.sortir();
+        }
+    }
+
+    public void deplacerCheval(Cheval cheval, int distance){
+        cheval.deplacer(distance);
+    }
+
+    public boolean aGagne(){
+        int nbGagne = 0;
+        for (Cheval cheval : chevaux){
+            if (cheval.isTermine()){
+                nbGagne +=1;
+            }
+        }
+        if(nbGagne == chevaux.size()){
+            return true;
+        }
+        else{
+            return false;
+        }
+    }
 }
