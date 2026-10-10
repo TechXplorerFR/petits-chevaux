@@ -23,12 +23,6 @@
 hs_err_pid*
 replay_pid*
 
-#IntelliJ
-.idea/
-
-# Maven
-.mvn
-
 target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
