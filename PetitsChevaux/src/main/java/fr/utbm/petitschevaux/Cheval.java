@@ -5,7 +5,9 @@ public class Cheval {
     private boolean sorti, termine;
 
     public Cheval() {
-
+        setSorti(false);
+        setTermine(false);
+        setPosition(0);
     }
 
     public void setPosition(int value) {
