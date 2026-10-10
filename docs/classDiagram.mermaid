@@ -1,0 +1,92 @@
+classDiagram
+direction TB
+
+class Jeu {
+  -List~Joueur~ joueurs
+  -Plateau plateau
+  -De de
+  -int joueurCourant
+  +demarrerPartie()
+  +jouerTour()
+  +passerAuJoueurSuivant()
+  +verifierVictoire() boolean
+}
+
+class Joueur {
+  -String nom
+  -Couleur couleur
+  -List~Cheval~ chevaux
+  +sortirCheval()
+  +deplacerCheval(Cheval, int)
+  +aGagne() boolean
+}
+
+class Cheval {
+  -int position
+  -boolean sorti
+  -boolean termine
+  +sortir()
+  +deplacer(int)
+  +rentrerEcurie()
+  +estArrive() boolean
+}
+
+class Plateau {
+  -List~Case~ cases
+  +getCase(int) Case
+  +estDeplacementValide(Cheval, int) boolean
+  +gererCapture(Cheval)
+}
+
+class Case {
+  -int numero
+  -TypeCase type
+  +estSecurisee() boolean
+}
+
+class De {
+  -int valeur
+  +lancer() int
+}
+
+class PartieController {
+  -Jeu jeu
+  +initialiser()
+  +onLancerDe()
+  +onChoisirCheval()
+  +actualiserVue()
+}
+
+class PlateauView {
+  -GridPane grille
+  +dessinerPlateau()
+  +afficherChevaux()
+  +mettreAJourPlateau()
+}
+
+class Couleur {
+  <<enumeration>>
+  ROUGE
+  BLEU
+  JAUNE
+  VERT
+}
+
+class TypeCase {
+  <<enumeration>>
+  NORMALE
+  DEPART
+  SECURISEE
+  ARRIVEE
+}
+
+Jeu "1" *-- "2..4" Joueur : contient
+Jeu "1" *-- "1" Plateau : utilise
+Jeu "1" *-- "1" De : utilise
+Joueur "1" *-- "4" Cheval : possede
+Plateau "1" *-- "1..*" Case : contient
+Joueur --> Couleur : possede
+Case --> TypeCase : type
+PartieController --> Jeu : controle
+PartieController --> PlateauView : actualise
+PlateauView --> Plateau : affiche
