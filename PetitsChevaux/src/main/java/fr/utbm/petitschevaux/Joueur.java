@@ -54,18 +54,12 @@ public class Joueur {
         cheval.deplacer(distance);
     }
 
-    public boolean aGagne(){
-        int nbGagne = 0;
-        for (Cheval cheval : chevaux){
-            if (cheval.isTermine()){
-                nbGagne +=1;
+    public boolean aGagne() {
+        for (Cheval cheval : chevaux) {
+            if (!cheval.isTermine()) {
+                return false;
             }
         }
-        if(nbGagne == chevaux.size()){
-            return true;
-        }
-        else{
-            return false;
-        }
+        return true;
     }
 }
