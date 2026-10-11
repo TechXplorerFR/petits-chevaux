@@ -2,10 +2,12 @@ package fr.utbm.petitschevaux;
 
 public class Cheval {
     public static final int ECURIE = 0;
+    private int numero;
     private int position;
     private boolean sorti, termine;
 
-    public Cheval() {
+    public Cheval(int numero) {
+        setNumero(numero);
         setSorti(false);
         setTermine(false);
         setPosition(0);
@@ -17,6 +19,14 @@ public class Cheval {
 
     public int getPosition() {
         return position;
+    }
+
+    public int getNumero() {
+        return numero;
+    }
+
+    public void setNumero(int numero) {
+        this.numero = numero;
     }
 
     public boolean isTermine() {

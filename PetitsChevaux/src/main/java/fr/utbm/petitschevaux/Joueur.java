@@ -2,6 +2,7 @@ package fr.utbm.petitschevaux;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 
 public class Joueur {
     private String nom;
@@ -45,17 +46,46 @@ public class Joueur {
         this.nom = nom;
         this.couleur = couleur;
         for (int i = 0; i < 4; i++) {
-            chevaux.add(new Cheval());
+            chevaux.add(new Cheval(i));
         }
     }
 
-    public void sortirCheval(){
+    public int sortirCheval(){
         for(Cheval cheval : chevaux){
             if (!cheval.isSorti() && !cheval.isTermine()) {
                 cheval.sortir();
-                return;
+                return 0;
             }
         }
+        return 1;
+    }
+
+    public boolean toutChevalSorti(){
+        for(Cheval cheval : chevaux){
+            if(!cheval.isSorti()){
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public Cheval choisirCheval(){
+        List<Cheval> chevauxSorti = new ArrayList<>();
+        System.out.print("voici la liste des chevaux disponible \n");
+        for(Cheval cheval : chevaux){
+            if(cheval.isSorti()){
+                chevauxSorti.add(cheval);
+                System.out.printf("cheval %d est disponible", cheval.getNumero());
+            }
+        }
+        System.out.print("chosi le numero du cheval que tu veu bouger");
+        int choix = new Scanner(System.in).nextInt();
+        for(Cheval cheval : chevauxSorti){
+            if(cheval.getNumero() == choix){
+                return cheval;
+            }
+        }
+        return new Cheval(-1);
     }
 
     public void deplacerCheval(Cheval cheval, int distance){

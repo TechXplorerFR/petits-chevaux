@@ -110,4 +110,8 @@ public class Jeu {
         }
         return false;
     }
+
+    public void choisirPremierJoueur(){
+        //TODO : creer une classe pour choisir le premier joueur par le lancer de de le plus fort
+    }
 }
