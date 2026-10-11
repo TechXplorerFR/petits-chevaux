@@ -2,7 +2,7 @@ package fr.utbm.petitschevaux;
 
 import javafx.scene.layout.GridPane;
 
-public class plateauView {
+public class PlateauView {
     private GridPane grille;
 
     public void dessinerPlateau(){
