@@ -47,7 +47,7 @@ public class Cheval {
         setPosition(0);
     }
 
-    public void estArrive() {
-        setTermine(true);
+    public boolean estArrive() {
+        return this.isTermine();
     }
 }
