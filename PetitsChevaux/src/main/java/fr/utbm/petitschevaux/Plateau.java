@@ -4,7 +4,22 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Plateau {
+    public static final int NOMBRE_CASES = 24;
+    public static final int NOMBRE_MARCHES = 6;
+    public static final int POSITION_BAS_ESCALIER = NOMBRE_CASES;
+    public static final int POSITION_ARRIVEE = NOMBRE_CASES + NOMBRE_MARCHES;
     private List<Case> cases = new ArrayList<>();
+
+    public Plateau() {
+        for (int i = 0; i <= POSITION_ARRIVEE; i++) {
+            Case uneCase = new Case();
+            uneCase.setNumero(i);
+            uneCase.setTypeCase(i == 0 ? TypeCase.DEPART
+                    : i == POSITION_ARRIVEE ? TypeCase.ARRIVEE
+                    : i > POSITION_BAS_ESCALIER ? TypeCase.SECURISEE : TypeCase.NORMALE);
+            cases.add(uneCase);
+        }
+    }
 
     public List<Case> getCases() {
         return cases;
@@ -19,23 +34,34 @@ public class Plateau {
     }
 
     public boolean estDeplacementValide(Cheval cheval, int count) {
+        if (cheval == null || count < 1 || count > 6 || !cheval.isSorti() || cheval.estArrive()) {
+            return false;
+        }
         int currentPosition = cheval.getPosition();
-        TypeCase currentCaseType = this.getCases().get(currentPosition).getTypeCase();
-
-        if(cheval.estArrive()) return false;
-
-        // On retire vérifie qu'on est sur une case normale, et que notre position n'excède pas les cases sécurisées
-        if (currentCaseType == TypeCase.NORMALE && currentPosition + count <= this.getCases().size() - 7) {
-            return true;
+        if (currentPosition == POSITION_ARRIVEE) {
+            return count == 6;
         }
-        // On vérifie que le cheval est sur une case sécurisée et que le compte correspond à la position du cheval pour qu'il puisse aller sur la case suivante
-        if(currentCaseType == TypeCase.SECURISEE && count == 6 - this.getCases().size() - 2 - currentPosition) {
-            return true;
+        if (currentPosition >= POSITION_BAS_ESCALIER && currentPosition < POSITION_ARRIVEE) {
+            return count == currentPosition - POSITION_BAS_ESCALIER + 1;
         }
-        return false;
+        return true;
+    }
+
+    public void gererCapture(Cheval cheval, List<Joueur> joueurs) {
+        if (cheval == null || joueurs == null || cheval.estArrive() || !cheval.isSorti()) {
+            return;
+        }
+        for (Joueur joueur : joueurs) {
+            for (Cheval autre : joueur.getChevaux()) {
+                if (autre != cheval && autre.isSorti() && !autre.isTermine()
+                        && autre.getPosition() == cheval.getPosition()) {
+                    autre.rentrerEcurie();
+                }
+            }
+        }
     }
 
     public void gererCapture() {
-        //TODO: gérer la capture d'un cheval par un autre cheval
+        // Conservation de l'ancienne signature pour compatibilité.
     }
 }

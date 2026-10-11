@@ -42,16 +42,26 @@ public class Joueur {
 
 
     public Joueur(String nom, Couleur couleur) {
+        this.nom = nom;
+        this.couleur = couleur;
+        for (int i = 0; i < 4; i++) {
+            chevaux.add(new Cheval());
+        }
     }
 
     public void sortirCheval(){
         for(Cheval cheval : chevaux){
-            cheval.sortir();
+            if (!cheval.isSorti() && !cheval.isTermine()) {
+                cheval.sortir();
+                return;
+            }
         }
     }
 
     public void deplacerCheval(Cheval cheval, int distance){
-        cheval.deplacer(distance);
+        if (chevaux.contains(cheval)) {
+            cheval.deplacer(distance);
+        }
     }
 
     public boolean aGagne() {

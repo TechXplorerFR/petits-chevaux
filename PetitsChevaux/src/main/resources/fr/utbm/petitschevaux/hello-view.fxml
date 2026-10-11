@@ -3,14 +3,14 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.layout.VBox?>
-
 <?import javafx.scene.control.Button?>
 <VBox alignment="CENTER" spacing="20.0" xmlns:fx="http://javafx.com/fxml"
-      fx:controller="fr.utbm.petitschevaux.HelloController">
+      fx:controller="fr.utbm.petitschevaux.PartieController">
     <padding>
         <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
     </padding>
 
-    <Label fx:id="welcomeText"/>
-    <Button text="Hello!" onAction="#onHelloButtonClick"/>
+    <Label fx:id="information" text="Joueur 1 - lancez le dé"/>
+    <Button text="Lancer le dé" onAction="#onLancerDe"/>
+    <Button text="Choisir le cheval" onAction="#onChoisirCheval"/>
 </VBox>

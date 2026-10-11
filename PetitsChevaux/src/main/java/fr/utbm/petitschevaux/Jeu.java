@@ -1,6 +1,7 @@
 package fr.utbm.petitschevaux;
 
 import java.util.List;
+import java.util.ArrayList;
 
 public class Jeu {
     private List<Joueur> joueurs;
@@ -9,7 +10,7 @@ public class Jeu {
     private int joueurCourant;
 
     public Jeu(List<Joueur> joueursReels) {
-        joueurs = joueursReels;
+        joueurs = joueursReels == null ? new ArrayList<>() : joueursReels;
     }
 
     public List<Joueur> getJoueurs() {
@@ -45,60 +46,59 @@ public class Jeu {
     }
 
     public void demarrerPartie() {
-        // Initialiser les joueurs (joueurs réels + 4 - joueurs réels) = 4 faux joueurs
-        while (joueurs.size() < 4) {
-            joueurs.add(new Joueur("Joueur " + (joueurs.size() + 1), Couleur.values()[joueurs.size()]));
+        if (joueurs.size() < 2 || joueurs.size() > 4) {
+            throw new IllegalStateException("Une partie nécessite entre 2 et 4 joueurs.");
         }
-        // Initialiser le plateau
         setPlateau(new Plateau());
-        // Initialiser le dé
         setDe(new De());
-        // Définir le joueur courant
         setJoueurCourant(0);
-        // Boucle de jeu jusqu'à ce qu'un joueur gagne
-        while (!verifierVictoire()) {
-            jouerTour();
-        }
     }
 
     public void jouerTour() {
         int rolledNumber = de.lancer();
-
-        // Tir de dés, et attentes choix cheval par joueur
-
-        List<Cheval> playerChevaux = this.joueurs.get(joueurCourant).getChevaux();
-        List<Cheval> chevauxDeplacables = playerChevaux.stream()
-                .filter(cheval -> plateau.estDeplacementValide(cheval, rolledNumber)) // Deplacement valide selon le
-                                                                                      // plateau
-                .filter(cheval -> !cheval.isTermine()) // Cheval pas encore arrivé
-                .filter(Cheval::isSorti)
-                .filter(cheval -> rolledNumber == 6 && !cheval.isSorti()) // Cheval sorti ou lancé
-                                                                          // un 6
-                // cheval est sur une case sécurisée et le compte correspond à la position du
-                // cheval pour qu'il puisse aller sur la case suivante
-                .filter(cheval -> {
-                    int currentPosition = cheval.getPosition();
-                    TypeCase currentCaseType = plateau.getCases().get(currentPosition).getTypeCase();
-                    return !(currentCaseType == TypeCase.SECURISEE
-                            && rolledNumber != (6 - plateau.getCases().size() - 2 - currentPosition)); // TODO
-                })
-                .toList();
-
-        if (!chevauxDeplacables.isEmpty()) {
-            // TODO: permettre au joueur de choisir un cheval à déplacer
-            Cheval chevalChoisi = chevauxDeplacables.get(0); // Pour l'instant, on choisit le premier cheval déplaçable
-            chevalChoisi.deplacer(rolledNumber);
+        Joueur joueur = joueurs.get(joueurCourant);
+        if (rolledNumber == 6) {
+            for (Cheval cheval : joueur.getChevaux()) {
+                if (!cheval.isSorti() && !cheval.isTermine()) {
+                    cheval.sortir();
+                    plateau.gererCapture(cheval, joueurs);
+                    return;
+                }
+            }
         }
-
+        for (Cheval cheval : joueur.getChevaux()) {
+            if (plateau.estDeplacementValide(cheval, rolledNumber)) {
+                deplacer(joueur, cheval, rolledNumber);
+                break;
+            }
+        }
         if (rolledNumber != 6) {
             passerAuJoueurSuivant();
         }
+    }
 
-        return;
+    public void deplacer(Joueur joueur, Cheval cheval, int nombre) {
+        if (!plateau.estDeplacementValide(cheval, nombre)) {
+            return;
+        }
+        if (cheval.getPosition() == Plateau.POSITION_ARRIVEE && nombre == 6) {
+            cheval.terminer();
+            return;
+        }
+        int destination = cheval.getPosition() >= Plateau.POSITION_BAS_ESCALIER
+                ? cheval.getPosition() + 1
+                : cheval.getPosition() + nombre;
+        if (cheval.getPosition() < Plateau.POSITION_BAS_ESCALIER
+                && destination > Plateau.POSITION_BAS_ESCALIER) {
+            destination = Plateau.POSITION_BAS_ESCALIER
+                    - (destination - Plateau.POSITION_BAS_ESCALIER);
+        }
+        cheval.setPosition(destination);
+        plateau.gererCapture(cheval, joueurs);
     }
 
     public void passerAuJoueurSuivant() {
-        setJoueurCourant((getJoueurCourant() + 1) % 4);
+        setJoueurCourant((getJoueurCourant() + 1) % joueurs.size());
         return;
     }
 

@@ -1,6 +1,7 @@
 package fr.utbm.petitschevaux;
 
 public class Cheval {
+    public static final int ECURIE = 0;
     private int position;
     private boolean sorti, termine;
 
@@ -36,18 +37,28 @@ public class Cheval {
 
     public void sortir() {
         setSorti(true);
+        setPosition(1);
     }
 
     public void deplacer(int cases) {
+        if (!sorti || termine || cases < 0) {
+            return;
+        }
         setPosition(getPosition() + cases);
     }
 
     public void rentrerEcurie() {
         setSorti(false);
+        setTermine(false);
         setPosition(0);
     }
 
     public boolean estArrive() {
         return this.isTermine();
+    }
+
+    public void terminer() {
+        setTermine(true);
+        setSorti(true);
     }
 }
