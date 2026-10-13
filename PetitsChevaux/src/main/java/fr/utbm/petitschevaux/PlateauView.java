@@ -4,6 +4,7 @@ import javafx.scene.Group;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
+import javafx.scene.shape.Polygon;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.transform.Rotate;
 
@@ -112,6 +113,7 @@ public class PlateauView {
         Group quartier = new Group();
         Color teinte = couleurPour(couleur);
         Color fondTeinte = teinte.deriveColor(0, 0.7, 1.15, 1);
+        Color fondEscalier = fondTeinte.interpolate(Color.WHITE, 0.35);
 
         Rectangle maison = new Rectangle(420, 20, 160, 160);
         maison.setArcWidth(8);
@@ -140,7 +142,7 @@ public class PlateauView {
 
         for (int i = 0; i < MARCHES; i++) {
             double[] p = enPixels(new int[] { 0, -(MARCHES - i) });
-            quartier.getChildren().add(creerCase(p[0], p[1], fondTeinte));
+            quartier.getChildren().add(creerCase(p[0], p[1], fondEscalier));
         }
 
         return quartier;
@@ -208,7 +210,7 @@ public class PlateauView {
 
     private int decalageDepart(Couleur couleur) {
         int quartier = Arrays.asList(COULEURS_QUARTIERS).indexOf(couleur);
-        return Math.floorMod(quartier * CASES_PAR_QUARTIER + LONGUEUR_COULOIR + 3,
+        return Math.floorMod(quartier * CASES_PAR_QUARTIER + LONGUEUR_COULOIR + 2,
                 Plateau.NOMBRE_CASES);
     }
 
@@ -222,6 +224,38 @@ public class PlateauView {
             }
             racine.getChildren().add(creerCase(p[0], p[1], fond));
         }
+
+        for (Couleur couleur : COULEURS_QUARTIERS) {
+            int indexDepart = decalageDepart(couleur);
+            double[] depart = positionsCases.get(indexDepart);
+            double[] suivante = positionsCases.get((indexDepart + 1) % positionsCases.size());
+            racine.getChildren().add(creerFleche(depart, suivante));
+        }
+    }
+
+    private Polygon creerFleche(double[] depart, double[] suivante) {
+        double dx = suivante[0] - depart[0];
+        double dy = suivante[1] - depart[1];
+        double longueur = Math.hypot(dx, dy);
+        double ux = dx / longueur;
+        double uy = dy / longueur;
+        double px = -uy;
+        double py = ux;
+        double x = depart[0];
+        double y = depart[1];
+
+        Polygon fleche = new Polygon(
+                x + ux * 10, y + uy * 10,
+                x + ux * 2 + px * 7, y + uy * 2 + py * 7,
+                x + ux * 2 + px * 2.5, y + uy * 2 + py * 2.5,
+                x - ux * 9 + px * 2.5, y - uy * 9 + py * 2.5,
+                x - ux * 9 - px * 2.5, y - uy * 9 - py * 2.5,
+                x + ux * 2 - px * 2.5, y + uy * 2 - py * 2.5,
+                x + ux * 2 - px * 7, y + uy * 2 - py * 7);
+        fleche.setFill(Color.WHITE);
+        fleche.setStroke(Color.web("#514c45"));
+        fleche.setStrokeWidth(1);
+        return fleche;
     }
 
     private Color couleurPour(Couleur couleur) {
