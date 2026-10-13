@@ -23,6 +23,8 @@
             <Label fx:id="information" text="Joueur 1 - lancez le dé" wrapText="true"/>
             <Button text="Lancer le dé" onAction="#onLancerDe"/>
             <Button text="Choisir le cheval" onAction="#onChoisirCheval"/>
+            <Button text="Sauvegarder" onAction="#onSauvegarder"/>
+            <Button text="Menu principal" onAction="#onRetourMenu"/>
         </VBox>
     </right>
 </BorderPane>
