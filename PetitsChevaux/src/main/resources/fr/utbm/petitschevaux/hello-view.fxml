@@ -5,6 +5,7 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.Pane?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
 <BorderPane xmlns:fx="http://javafx.com/fxml"
@@ -20,9 +21,13 @@
                 <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
             </padding>
             <Label fx:id="resultatDe" text="Résultat du dé : " wrapText="true"/>
+            <StackPane fx:id="vueDe" prefHeight="70.0" prefWidth="70.0"/>
             <Label fx:id="information" text="Joueur 1 - lancez le dé" wrapText="true"/>
             <Button text="Lancer le dé" onAction="#onLancerDe"/>
-            <Button text="Choisir le cheval" onAction="#onChoisirCheval"/>
+            <VBox fx:id="joueursAffiches" spacing="4.0"/>
+            <VBox fx:id="historiqueLancers" prefHeight="170.0" minHeight="170.0"
+                  maxHeight="170.0" spacing="2.0"
+                  style="-fx-border-color: #c6c0b5; -fx-border-radius: 4; -fx-padding: 8;"/>
         </VBox>
     </right>
 </BorderPane>

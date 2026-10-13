@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 public class PlateauView {
     private static final double TAILLE = 600;
@@ -25,20 +26,74 @@ public class PlateauView {
     private final List<Joueur> joueurs;
     private final List<Quartier> quartiers;
     private final List<Couleur> couleursQuartiers;
+    private final Map<Couleur, EcurieView> ecuries = new HashMap<>();
+    private final Consumer<Cheval> selection;
+    private List<Cheval> chevauxDeplacables = List.of();
     private final Pane racine = new Pane();
     private final List<double[]> positionsCases = new ArrayList<>();
     private final Map<Couleur, List<double[]>> positionsArrivee = new HashMap<>();
 
     public PlateauView(Plateau plateau) {
-        this(plateau, List.of());
+        this(plateau, List.of(), cheval -> {
+        });
+    }
+
+    private void afficherPossibilitesDeplacement() {
+        for (Cheval cheval : chevauxDeplacables) {
+            Joueur joueur = trouverJoueur(cheval);
+            if (joueur == null) {
+                continue;
+            }
+            int position = plateau.positionAbsolue(joueur, cheval);
+            if (position >= 0 && position < positionsCases.size()) {
+                double[] destination = positionsCases.get(Math.floorMod(
+                        position + 1, positionsCases.size()));
+                Circle repere = new Circle(destination[0], destination[1], 7,
+                        Color.BLACK);
+                repere.setOpacity(0.55);
+                racine.getChildren().add(repere);
+            }
+        }
+    }
+
+    private Joueur trouverJoueur(Cheval cheval) {
+        for (Joueur joueur : joueurs) {
+            if (joueur.getChevaux().contains(cheval)) {
+                return joueur;
+            }
+        }
+        return null;
+    }
+
+    private Joueur trouverJoueur(Couleur couleur) {
+        for (Joueur joueur : joueurs) {
+            if (joueur.getCouleur() == couleur) {
+                return joueur;
+            }
+        }
+        return null;
     }
 
     public PlateauView(Plateau plateau, List<Joueur> joueurs) {
+        this(plateau, joueurs, cheval -> {
+        });
+    }
+
+    /**
+     * Crée la vue du plateau.
+     *
+     * @param plateau plateau métier
+     * @param joueurs joueurs affichés
+     * @param selection action appelée lors du choix d'un cheval
+     */
+    public PlateauView(Plateau plateau, List<Joueur> joueurs, Consumer<Cheval> selection) {
         if (plateau == null) {
             throw new IllegalArgumentException("Le plateau est obligatoire.");
         }
         this.plateau = plateau;
         this.joueurs = joueurs == null ? List.of() : List.copyOf(joueurs);
+        this.selection = selection == null ? cheval -> {
+        } : selection;
         this.quartiers = List.of(
                 new Quartier(Couleur.JAUNE),
                 new Quartier(Couleur.ROUGE),
@@ -47,6 +102,15 @@ public class PlateauView {
         this.couleursQuartiers = quartiers.stream()
                 .map(Quartier::getCouleur)
                 .toList();
+        for (int i = 0; i < quartiers.size(); i++) {
+            Couleur couleur = quartiers.get(i).getCouleur();
+            Joueur joueur = trouverJoueur(couleur);
+            if (joueur == null) {
+                throw new IllegalStateException(
+                        "Chaque quartier doit être associé à un joueur de la partie.");
+            }
+            ecuries.put(couleur, new EcurieView(joueur, this.selection));
+        }
         racine.setPrefSize(TAILLE, TAILLE);
         racine.setMinSize(TAILLE, TAILLE);
     }
@@ -73,6 +137,13 @@ public class PlateauView {
             Group dessinQuartier = quartierModele.getDessin();
             dessinQuartier.getTransforms().setAll(new Rotate(quartier * 90, CENTRE, CENTRE));
             racine.getChildren().add(dessinQuartier);
+            EcurieView ecurie = ecuries.get(couleur);
+            if (ecurie != null) {
+                ecurie.getDessin().getTransforms().setAll(new Rotate(quartier * 90, CENTRE, CENTRE));
+                ecurie.orienterNom(quartier * 90, quartier != 2);
+                racine.getChildren().add(ecurie.getDessin());
+                ecurie.actualiser(chevauxDeplacables);
+            }
 
             for (int[] g : cheminBrasDuHaut()) {
                 positionsCases.add(enPixels(tournerGrille(g, quartier)));
@@ -86,6 +157,7 @@ public class PlateauView {
 
         dessinerAnneau();
         afficherChevaux();
+        afficherPossibilitesDeplacement();
     }
 
     public void afficherChevaux() {
@@ -101,13 +173,23 @@ public class PlateauView {
                             decalageDepart(joueur.getCouleur()) + cheval.getPosition() - 1,
                             positionsCases.size());
                     position = positionsCases.get(index);
-                    racine.getChildren().add(creerPion(position[0], position[1], joueur.getCouleur()));
+                    ChevalView chevalView = new ChevalView(cheval, joueur.getCouleur(), selection);
+                    chevalView.afficherSelection(!chevauxDeplacables.contains(cheval)
+                            && !chevauxDeplacables.isEmpty());
+                    chevalView.getNode().setCenterX(position[0]);
+                    chevalView.getNode().setCenterY(position[1]);
+                    racine.getChildren().add(chevalView.getNode());
                 } else {
                     List<double[]> ligne = positionsArrivee.get(joueur.getCouleur());
                     int index = cheval.getPosition() - Plateau.POSITION_BAS_ESCALIER;
                     if (ligne != null && index >= 0 && index < ligne.size()) {
                         position = ligne.get(index);
-                        racine.getChildren().add(creerPion(position[0], position[1], joueur.getCouleur()));
+                        ChevalView chevalView = new ChevalView(cheval, joueur.getCouleur(), selection);
+                        chevalView.afficherSelection(!chevauxDeplacables.contains(cheval)
+                                && !chevauxDeplacables.isEmpty());
+                        chevalView.getNode().setCenterX(position[0]);
+                        chevalView.getNode().setCenterY(position[1]);
+                        racine.getChildren().add(chevalView.getNode());
                     }
                 }
             }
@@ -115,6 +197,16 @@ public class PlateauView {
     }
 
     public void mettreAJourPlateau() {
+        dessinerPlateau();
+    }
+
+    /**
+     * Définit les chevaux dont la destination doit être signalée.
+     *
+     * @param chevaux chevaux déplaçables après le lancer
+     */
+    public void afficherPossibilites(List<Cheval> chevaux) {
+        chevauxDeplacables = chevaux == null ? List.of() : List.copyOf(chevaux);
         dessinerPlateau();
     }
 
@@ -132,13 +224,6 @@ public class PlateauView {
         tuile.setStroke(Color.web("#514c45"));
         tuile.setStrokeWidth(1.5);
         return tuile;
-    }
-
-    private Circle creerPion(double x, double y, Couleur couleur) {
-        Circle pion = new Circle(x, y, 12, couleurPour(couleur));
-        pion.setStroke(Color.WHITE);
-        pion.setStrokeWidth(2);
-        return pion;
     }
 
     private void dessinerCentre() {

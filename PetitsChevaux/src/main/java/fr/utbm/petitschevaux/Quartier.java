@@ -2,7 +2,6 @@ package fr.utbm.petitschevaux;
 
 import javafx.scene.Group;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
 
 /**
@@ -56,31 +55,6 @@ public class Quartier {
         Color teinte = couleurPour(couleur);
         Color fondTeinte = teinte.deriveColor(0, 0.7, 1.15, 1);
         Color fondEscalier = fondTeinte.interpolate(Color.WHITE, 0.35);
-
-        Rectangle maison = new Rectangle(420, 20, 160, 160);
-        maison.setArcWidth(8);
-        maison.setArcHeight(8);
-        maison.setFill(fondTeinte);
-        maison.setStroke(teinte.darker());
-        maison.setStrokeWidth(3);
-        dessin.getChildren().add(maison);
-
-        Rectangle ecurie = new Rectangle(440, 40, 120, 120);
-        ecurie.setArcWidth(12);
-        ecurie.setArcHeight(12);
-        ecurie.setFill(Color.WHITE);
-        ecurie.setStroke(teinte.darker());
-        ecurie.setStrokeWidth(2);
-        dessin.getChildren().add(ecurie);
-
-        for (double x : new double[] { 475, 525 }) {
-            for (double y : new double[] { 75, 125 }) {
-                Circle placeCheval = new Circle(x, y, 17, teinte);
-                placeCheval.setStroke(Color.WHITE);
-                placeCheval.setStrokeWidth(2);
-                dessin.getChildren().add(placeCheval);
-            }
-        }
 
         for (int i = 0; i < NOMBRE_MARCHES; i++) {
             double x = CENTRE;

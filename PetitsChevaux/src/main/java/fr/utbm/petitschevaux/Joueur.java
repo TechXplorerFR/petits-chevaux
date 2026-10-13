@@ -7,6 +7,7 @@ import java.util.Scanner;
 public class Joueur {
     private String nom;
     private Couleur couleur;
+    private final boolean bot;
     private List<Cheval> chevaux = new ArrayList<>();
 
     public List<Cheval> getChevaux() {
@@ -43,11 +44,32 @@ public class Joueur {
 
 
     public Joueur(String nom, Couleur couleur) {
+        this(nom, couleur, false);
+    }
+
+    /**
+     * Crée un joueur humain ou contrôlé par l'ordinateur.
+     *
+     * @param nom nom affiché
+     * @param couleur couleur du joueur
+     * @param bot vrai si le joueur joue automatiquement
+     */
+    public Joueur(String nom, Couleur couleur, boolean bot) {
         this.nom = nom;
         this.couleur = couleur;
+        this.bot = bot;
         for (int i = 0; i < 4; i++) {
             chevaux.add(new Cheval(i));
         }
+    }
+
+    /**
+     * Indique si ce joueur est un bot.
+     *
+     * @return vrai pour un joueur automatique
+     */
+    public boolean isBot() {
+        return bot;
     }
 
     public int sortirCheval(){
