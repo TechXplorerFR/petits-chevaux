@@ -2,7 +2,6 @@ package fr.utbm.petitschevaux;
 
 import javafx.application.Platform;
 import javafx.fxml.FXML;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
@@ -18,12 +17,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Contrôleur du menu principal : choix du nombre de joueurs,
+ * Contrôleur du menu principal : choix des joueurs humains (les places libres
+ * sont prises par des bots),
  * lancement d'une nouvelle partie ou chargement d'une partie sauvegardée.
  */
 public class Menu {
-    public static final int MIN_JOUEURS = 2;
-    public static final int MAX_JOUEURS = 4;
+    public static final int MIN_HUMAINS = 1;
+    public static final int MAX_HUMAINS = Jeu.MAX_JOUEURS;
 
     @FXML
     private Spinner<Integer> nombreJoueurs;
@@ -37,12 +37,13 @@ public class Menu {
     @FXML
     private void initialize() {
         nombreJoueurs.setValueFactory(
-                new SpinnerValueFactory.IntegerSpinnerValueFactory(MIN_JOUEURS, MAX_JOUEURS, MIN_JOUEURS));
+                new SpinnerValueFactory.IntegerSpinnerValueFactory(MIN_HUMAINS, MAX_HUMAINS, 2));
 
         Couleur[] couleurs = Couleur.values();
-        for (int i = 0; i < MAX_JOUEURS; i++) {
+        for (int i = 0; i < MAX_HUMAINS; i++) {
             Label couleur = new Label(couleurs[i].name());
             couleur.setPrefWidth(70);
+            couleur.setTextFill(Rendu.couleur(couleurs[i]));
             TextField nom = new TextField("Joueur " + (i + 1));
             HBox ligne = new HBox(10, couleur, nom);
             nomsJoueurs.add(nom);
@@ -71,7 +72,7 @@ public class Menu {
             joueurs.add(new Joueur(nom.isEmpty() ? "Joueur " + (i + 1) : nom, couleurs[i]));
         }
         Jeu jeu = new Jeu(joueurs);
-        jeu.demarrerPartie();
+        jeu.choisirPremierJoueur();
         afficherPartie(jeu);
     }
 
@@ -88,7 +89,7 @@ public class Menu {
         try {
             afficherPartie(Sauvegarde.charger(fichier.toPath()));
         } catch (IOException e) {
-            new Alert(Alert.AlertType.ERROR, "Impossible de charger la partie :\n" + e.getMessage()).showAndWait();
+            PetitsChevauxApp.afficherErreur("Impossible de charger la partie", e);
         }
     }
 
@@ -99,9 +100,9 @@ public class Menu {
 
     private void afficherPartie(Jeu jeu) {
         try {
-            HelloApplication.afficherPartie(getStage(), jeu);
+            PetitsChevauxApp.afficherPartie(getStage(), jeu);
         } catch (IOException e) {
-            new Alert(Alert.AlertType.ERROR, "Impossible d'ouvrir la partie :\n" + e.getMessage()).showAndWait();
+            PetitsChevauxApp.afficherErreur("Impossible d'ouvrir la partie", e);
         }
     }
 

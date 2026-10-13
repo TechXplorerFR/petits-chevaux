@@ -1,47 +1,16 @@
 package fr.utbm.petitschevaux;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.Scanner;
 
 public class Joueur {
-    private String nom;
-    private Couleur couleur;
+    public static final int NOMBRE_CHEVAUX = 4;
+
+    private final String nom;
+    private final Couleur couleur;
     private final boolean bot;
-    private List<Cheval> chevaux = new ArrayList<>();
-
-    public List<Cheval> getChevaux() {
-        return chevaux;
-    }
-
-    public void setChevaux(List<Cheval> chevaux) {
-        this.chevaux = chevaux;
-    }
-
-    public void addCheval(Cheval chev) {
-        this.chevaux.add(chev);
-    }
-
-    public void removeCheval(Cheval chev) {
-        this.chevaux.remove(chev);
-    }
-
-    public Couleur getCouleur() {
-        return couleur;
-    }
-
-    public void setCouleur(Couleur couleur) {
-        this.couleur = couleur;
-    }
-
-    public String getNom() {
-        return nom;
-    }
-
-    public void setNom(String nom) {
-        this.nom = nom;
-    }
-
+    private final List<Cheval> chevaux;
 
     public Joueur(String nom, Couleur couleur) {
         this(nom, couleur, false);
@@ -55,12 +24,25 @@ public class Joueur {
      * @param bot vrai si le joueur joue automatiquement
      */
     public Joueur(String nom, Couleur couleur, boolean bot) {
+        if (couleur == null) {
+            throw new IllegalArgumentException("La couleur d'un joueur est obligatoire.");
+        }
         this.nom = nom;
         this.couleur = couleur;
         this.bot = bot;
-        for (int i = 0; i < 4; i++) {
-            chevaux.add(new Cheval(i));
+        List<Cheval> liste = new ArrayList<>();
+        for (int i = 0; i < NOMBRE_CHEVAUX; i++) {
+            liste.add(new Cheval(i));
         }
+        this.chevaux = Collections.unmodifiableList(liste);
+    }
+
+    public String getNom() {
+        return nom;
+    }
+
+    public Couleur getCouleur() {
+        return couleur;
     }
 
     /**
@@ -72,56 +54,14 @@ public class Joueur {
         return bot;
     }
 
-    public int sortirCheval(){
-        for(Cheval cheval : chevaux){
-            if (!cheval.isSorti() && !cheval.isTermine()) {
-                cheval.sortir();
-                return 0;
-            }
-        }
-        return 1;
-    }
-
-    public boolean toutChevalSorti(){
-        for(Cheval cheval : chevaux){
-            if(!cheval.isSorti()){
-                return false;
-            }
-        }
-        return true;
-    }
-
-    public Cheval choisirCheval(){
-        List<Cheval> chevauxSorti = new ArrayList<>();
-        System.out.print("voici la liste des chevaux disponible \n");
-        for(Cheval cheval : chevaux){
-            if(cheval.isSorti()){
-                chevauxSorti.add(cheval);
-                System.out.printf("cheval %d est disponible", cheval.getNumero());
-            }
-        }
-        System.out.print("chosi le numero du cheval que tu veu bouger");
-        int choix = new Scanner(System.in).nextInt();
-        for(Cheval cheval : chevauxSorti){
-            if(cheval.getNumero() == choix){
-                return cheval;
-            }
-        }
-        return new Cheval(-1);
-    }
-
-    public void deplacerCheval(Cheval cheval, int distance){
-        if (chevaux.contains(cheval)) {
-            cheval.deplacer(distance);
-        }
+    /**
+     * @return les quatre chevaux du joueur (liste non modifiable)
+     */
+    public List<Cheval> getChevaux() {
+        return chevaux;
     }
 
     public boolean aGagne() {
-        for (Cheval cheval : chevaux) {
-            if (!cheval.isTermine()) {
-                return false;
-            }
-        }
-        return true;
+        return chevaux.stream().allMatch(Cheval::isTermine);
     }
 }

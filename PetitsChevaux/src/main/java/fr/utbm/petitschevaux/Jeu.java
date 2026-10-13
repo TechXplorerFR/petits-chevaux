@@ -1,210 +1,302 @@
 package fr.utbm.petitschevaux;
 
-import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.stream.Collectors;
+import java.util.Comparator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
 
+/**
+ * Déroulement d'une partie : joueurs, tour courant, dé et règles de tour.
+ *
+ * <p>Un tour suit les états {@link Etat#ATTENTE_LANCER} → {@link Etat#ATTENTE_CHOIX}
+ * → (joueur suivant, ou même joueur sur un 6). La partie passe à {@link Etat#TERMINEE}
+ * dès qu'un joueur a ramené ses quatre chevaux.</p>
+ */
 public class Jeu {
-    private List<Joueur> joueurs;
-    private Plateau plateau;
-    private De de;
-    private int joueurCourant;
+    public static final int MAX_JOUEURS = Couleur.values().length;
+    public static final int TAILLE_HISTORIQUE = 7;
+    private static final List<String> NOMS_BOTS = List.of(
+            "Botox", "Botanic", "Botassium", "Botulisme",
+            "Botentiel", "Botocopy", "Botomic", "Botéine");
 
-    public Jeu(List<Joueur> joueursReels) {
-        joueurs = joueursReels == null ? new ArrayList<>() : new ArrayList<>(joueursReels);
+    /** États d'un tour de jeu. */
+    public enum Etat {
+        ATTENTE_LANCER, ATTENTE_CHOIX, TERMINEE
+    }
+
+    /** Un lancer de dé, pour l'historique affiché. */
+    public record Lancer(Joueur joueur, int valeur) {
+    }
+
+    private final List<Joueur> joueurs;
+    private final Plateau plateau = new Plateau();
+    private final De de;
+    private final LinkedList<Lancer> historique = new LinkedList<>();
+    private int joueurCourant;
+    private Etat etat = Etat.ATTENTE_LANCER;
+    private Joueur vainqueur;
+
+    /**
+     * Crée une partie. Les couleurs absentes sont complétées par des bots,
+     * et les joueurs sont rangés dans l'ordre du plateau.
+     *
+     * @param joueurs joueurs choisis (une couleur chacun)
+     */
+    public Jeu(List<Joueur> joueurs) {
+        this(joueurs, new De());
+    }
+
+    /**
+     * @param joueurs joueurs choisis (une couleur chacun)
+     * @param de dé utilisé (permet un dé truqué dans les tests)
+     */
+    public Jeu(List<Joueur> joueurs, De de) {
+        this.de = de;
+        this.joueurs = new ArrayList<>(joueurs == null ? List.of() : joueurs);
+        completerAvecBots();
+        this.joueurs.sort(Comparator.comparing(Joueur::getCouleur));
+        if (this.joueurs.size() != MAX_JOUEURS
+                || this.joueurs.stream().map(Joueur::getCouleur).distinct().count() != MAX_JOUEURS) {
+            throw new IllegalArgumentException("Chaque couleur doit avoir exactement un joueur.");
+        }
+        verifierVictoire();
+    }
+
+    private void completerAvecBots() {
+        List<String> nomsBots = new ArrayList<>(NOMS_BOTS);
+        Collections.shuffle(nomsBots);
+        for (Couleur couleur : Couleur.values()) {
+            if (joueurs.stream().noneMatch(joueur -> joueur.getCouleur() == couleur)) {
+                joueurs.add(new Joueur(nomsBots.remove(0), couleur, true));
+            }
+        }
     }
 
     public List<Joueur> getJoueurs() {
-        return joueurs;
-    }
-
-    public void setJoueurs(List<Joueur> joueurs) {
-        this.joueurs = joueurs;
+        return Collections.unmodifiableList(joueurs);
     }
 
     public Plateau getPlateau() {
         return plateau;
     }
 
-    public void setPlateau(Plateau plateau) {
-        this.plateau = plateau;
-    }
-
     public De getDe() {
         return de;
-    }
-
-    public void setDe(De de) {
-        this.de = de;
     }
 
     public int getJoueurCourant() {
         return joueurCourant;
     }
 
-    public void setJoueurCourant(int joueurCourant) {
-        this.joueurCourant = joueurCourant;
-    }
-
-    public void demarrerPartie() {
-        completerAvecBots();
-        if (joueurs.size() < 2 || joueurs.size() > 4) {
-            throw new IllegalStateException("Une partie nécessite entre 2 et 4 joueurs.");
-        }
-        setPlateau(new Plateau());
-        setDe(new De());
-        setJoueurCourant(0);
-    }
-
-    private void completerAvecBots() {
-        List<String> nomsBots = new ArrayList<>(List.of(
-                "Botox", "Botanic", "Botassium", "Botulisme",
-                "Botentiel", "Botocopy", "Botomic", "Botéine"));
-        Collections.shuffle(nomsBots);
-        for (Couleur couleur : Couleur.values()) {
-            if (joueurs.stream().noneMatch(joueur -> joueur.getCouleur() == couleur)) {
-                String nomBot = nomsBots.remove(0);
-                joueurs.add(new Joueur(nomBot, couleur, true));
-            }
-        }
-    }
-
-    public void jouerTour() {
-        int rolledNumber = lancerDe();
-        Joueur joueur = joueurs.get(joueurCourant);
-        if (rolledNumber == 6) {
-            for (Cheval cheval : joueur.getChevaux()) {
-                if (!cheval.isSorti() && !cheval.isTermine()) {
-                    cheval.sortir();
-                    plateau.gererCapture(cheval, joueurs);
-                    return;
-                }
-
-            }
-        }
-        for (Cheval cheval : joueur.getChevaux()) {
-            if (plateau.estDeplacementValide(joueur, cheval, rolledNumber, joueurs)) {
-                deplacer(joueur, cheval, rolledNumber);
-                break;
-            }
-        }
-        if (rolledNumber != 6) {
-            passerAuJoueurSuivant();
-        }
+    /**
+     * @return le joueur dont c'est le tour
+     */
+    public Joueur getJoueurActif() {
+        return joueurs.get(joueurCourant);
     }
 
     /**
-     * Lance le dé sans déplacer automatiquement un cheval.
-     *
-     * @return résultat du lancer
+     * Fixe le joueur dont c'est le tour (début de partie ou chargement d'une sauvegarde).
      */
-    public int lancerDe() {
-        return de.lancer();
+    void setJoueurCourant(int joueurCourant) {
+        if (joueurCourant < 0 || joueurCourant >= joueurs.size()) {
+            throw new IllegalArgumentException("Joueur courant invalide : " + joueurCourant);
+        }
+        this.joueurCourant = joueurCourant;
     }
 
-    public void deplacer(Joueur joueur, Cheval cheval, int nombre) {
-        if (!plateau.estDeplacementValide(joueur, cheval, nombre, joueurs)) {
-            return;
+    public Etat getEtat() {
+        return etat;
+    }
+
+    /**
+     * @return vrai si le joueur courant peut lancer le dé
+     */
+    public boolean peutLancer() {
+        return etat == Etat.ATTENTE_LANCER;
+    }
+
+    /**
+     * @return vrai après un lancer qui permet au moins un déplacement
+     */
+    public boolean isAttenteChoix() {
+        return etat == Etat.ATTENTE_CHOIX;
+    }
+
+    /**
+     * @return vrai si un joueur a ramené ses quatre chevaux
+     */
+    public boolean estTerminee() {
+        return etat == Etat.TERMINEE;
+    }
+
+    /**
+     * @return le gagnant, ou {@code null} si la partie continue
+     */
+    public Joueur getVainqueur() {
+        return vainqueur;
+    }
+
+    /**
+     * @return les derniers lancers, du plus récent au plus ancien
+     */
+    public List<Lancer> getHistorique() {
+        return Collections.unmodifiableList(historique);
+    }
+
+    /**
+     * Lance le dé pour le joueur courant. Si aucun cheval ne peut jouer,
+     * le tour passe directement (sauf sur un 6, où le joueur relance).
+     *
+     * @return résultat du lancer, ou 0 si le lancer n'est pas permis
+     */
+    public int lancerDe() {
+        if (!peutLancer()) {
+            return 0;
         }
-        if (cheval.getPosition() == Plateau.POSITION_ARRIVEE && nombre == 6) {
-            cheval.terminer();
-            return;
+        int valeur = de.lancer();
+        ajouterHistorique(new Lancer(getJoueurActif(), valeur));
+        if (calculerChevauxDeplacables().isEmpty()) {
+            finirTour(valeur);
+        } else {
+            etat = Etat.ATTENTE_CHOIX;
         }
-        int destination = cheval.getPosition() + nombre;
-        cheval.setPosition(destination);
-        plateau.gererCapture(cheval, joueurs);
+        return valeur;
     }
 
     /**
      * Retourne les chevaux du joueur courant qui peuvent jouer le résultat du dé.
      *
-     * @return chevaux déplaçables
+     * @return chevaux déplaçables, vide si le dé n'a pas encore été lancé
      */
     public List<Cheval> getChevauxDeplacables() {
-        if (de == null || joueurs.isEmpty()) {
-            return List.of();
-        }
-        Joueur joueur = joueurs.get(joueurCourant);
+        return isAttenteChoix() ? calculerChevauxDeplacables() : List.of();
+    }
+
+    private List<Cheval> calculerChevauxDeplacables() {
+        Joueur joueur = getJoueurActif();
         return joueur.getChevaux().stream()
-                .filter(cheval -> (!cheval.isSorti() && !cheval.isTermine()
-                        && de.getValeur() == 6)
-                        || plateau.estDeplacementValide(
-                                joueur, cheval, de.getValeur(), joueurs))
-                .collect(Collectors.toList());
+                .filter(cheval -> plateau.estDeplacementValide(
+                        joueur, cheval, de.getValeur(), joueurs))
+                .toList();
     }
 
     /**
-     * Déplace le cheval sélectionné et passe au joueur suivant si nécessaire.
+     * Déplace le cheval choisi, puis passe au joueur suivant sauf sur un 6.
      *
      * @param cheval cheval sélectionné
      * @return vrai si le déplacement a été effectué
      */
     public boolean jouerCheval(Cheval cheval) {
-        if (cheval == null || de == null || joueurs.isEmpty()) {
+        if (!getChevauxDeplacables().contains(cheval)) {
             return false;
         }
-        Joueur joueur = joueurs.get(joueurCourant);
-        if (!cheval.isSorti() && !cheval.isTermine() && de.getValeur() == 6
-                && joueur.getChevaux().contains(cheval)) {
-            cheval.sortir();
-            plateau.gererCapture(cheval, joueurs);
-            return true;
-        }
-
-        if (!plateau.estDeplacementValide(joueur, cheval, de.getValeur(), joueurs)) {
-            return false;
-        }
-        int valeur = de.getValeur();
-        deplacer(joueur, cheval, valeur);
-        if (valeur != 6) {
-            passerAuJoueurSuivant();
+        Joueur joueur = getJoueurActif();
+        cheval.setPosition(plateau.destination(cheval, de.getValeur()));
+        plateau.gererCapture(joueur, cheval, joueurs);
+        if (!verifierVictoire()) {
+            finirTour(de.getValeur());
         }
         return true;
     }
 
     /**
-     * Joue automatiquement le tour du joueur courant lorsqu'il s'agit d'un bot.
+     * Joue entièrement le tour du joueur courant lorsqu'il s'agit d'un bot :
+     * il lance le dé et avance le cheval le plus avancé possible.
      *
-     * @return résultat du dé, ou zéro si le joueur courant n'est pas un bot
+     * @return résultat du dé, ou zéro si le joueur courant ne peut pas jouer automatiquement
      */
     public int jouerTourBot() {
-        if (joueurs.isEmpty() || !joueurs.get(joueurCourant).isBot()) {
+        if (!getJoueurActif().isBot() || !peutLancer()) {
             return 0;
         }
         int valeur = lancerDe();
-        List<Cheval> deplacables = getChevauxDeplacables();
-        Cheval choix = deplacables.stream()
-                .max((premier, second) -> Integer.compare(
-                        progression(premier), progression(second)))
-                .orElse(null);
-        if (choix != null) {
-            jouerCheval(choix);
-        } else {
-            passerAuJoueurSuivant();
-        }
+        choisirChevalBot().ifPresent(this::jouerCheval);
         return valeur;
     }
 
-    private int progression(Cheval cheval) {
-        return cheval.isSorti() ? cheval.getPosition() : -1;
+    /**
+     * Stratégie du bot : capturer si possible, sinon sortir un cheval,
+     * sinon avancer le cheval le plus proche de l'arrivée.
+     */
+    private Optional<Cheval> choisirChevalBot() {
+        Joueur bot = getJoueurActif();
+        int valeur = de.getValeur();
+        return getChevauxDeplacables().stream().max(Comparator
+                .comparing((Cheval cheval) -> plateau.capturerait(bot, cheval, valeur, joueurs))
+                .thenComparing(cheval -> !cheval.isSorti())
+                .thenComparingInt(Cheval::getPosition));
     }
 
-    public void passerAuJoueurSuivant() {
-        setJoueurCourant((getJoueurCourant() + 1) % joueurs.size());
-        return;
+    /**
+     * Désigne le premier joueur : chacun lance le dé, le plus fort commence ;
+     * en cas d'égalité, seuls les ex æquo relancent. Les lancers vont dans l'historique.
+     *
+     * @return le joueur qui commence
+     */
+    public Joueur choisirPremierJoueur() {
+        List<Joueur> candidats = new ArrayList<>(joueurs);
+        while (candidats.size() > 1) {
+            List<Joueur> meilleurs = new ArrayList<>();
+            int meilleur = 0;
+            for (Joueur joueur : candidats) {
+                int valeur = de.lancer();
+                ajouterHistorique(new Lancer(joueur, valeur));
+                if (valeur > meilleur) {
+                    meilleur = valeur;
+                    meilleurs.clear();
+                }
+                if (valeur == meilleur) {
+                    meilleurs.add(joueur);
+                }
+            }
+            candidats = meilleurs;
+        }
+        joueurCourant = joueurs.indexOf(candidats.get(0));
+        de.restaurer(0);
+        return candidats.get(0);
     }
 
-    public boolean verifierVictoire() {
+    /**
+     * Restaure l'état d'un tour sauvegardé : joueur courant, valeur du dé
+     * et éventuel choix de cheval en attente.
+     */
+    void restaurerTour(int joueurCourant, int valeurDe, boolean attenteChoix) {
+        setJoueurCourant(joueurCourant);
+        de.restaurer(valeurDe);
+        if (estTerminee()) {
+            return;
+        }
+        etat = Etat.ATTENTE_CHOIX;
+        if (!attenteChoix || calculerChevauxDeplacables().isEmpty()) {
+            etat = Etat.ATTENTE_LANCER;
+        }
+    }
+
+    private void ajouterHistorique(Lancer lancer) {
+        historique.addFirst(lancer);
+        if (historique.size() > TAILLE_HISTORIQUE) {
+            historique.removeLast();
+        }
+    }
+
+    private void finirTour(int valeur) {
+        etat = Etat.ATTENTE_LANCER;
+        if (valeur != 6) {
+            joueurCourant = (joueurCourant + 1) % joueurs.size();
+        }
+    }
+
+    private boolean verifierVictoire() {
         for (Joueur joueur : joueurs) {
             if (joueur.aGagne()) {
+                vainqueur = joueur;
+                etat = Etat.TERMINEE;
                 return true;
             }
         }
         return false;
-    }
-
-    public void choisirPremierJoueur(){
-        //TODO : creer une classe pour choisir le premier joueur par le lancer de de le plus fort
     }
 }

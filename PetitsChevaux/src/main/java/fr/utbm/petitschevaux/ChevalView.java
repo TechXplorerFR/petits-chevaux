@@ -2,6 +2,7 @@ package fr.utbm.petitschevaux;
 
 import javafx.animation.Animation;
 import javafx.animation.FadeTransition;
+import javafx.scene.Cursor;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.util.Duration;
@@ -9,12 +10,11 @@ import javafx.util.Duration;
 import java.util.function.Consumer;
 
 /**
- * Vue graphique indépendante d'un cheval.
+ * Pion d'un cheval sur la piste ou dans l'escalier.
  */
 public class ChevalView {
-    private final Cheval cheval;
-    private final Couleur couleur;
     private final Circle pion;
+    private FadeTransition clignotement;
 
     /**
      * Crée la vue d'un cheval.
@@ -24,12 +24,10 @@ public class ChevalView {
      * @param selection action appelée au clic
      */
     public ChevalView(Cheval cheval, Couleur couleur, Consumer<Cheval> selection) {
-        this.cheval = cheval;
-        this.couleur = couleur;
-        this.pion = new Circle(12, couleurPour(couleur));
+        this.pion = new Circle(12, Rendu.couleur(couleur));
         pion.setStroke(Color.WHITE);
         pion.setStrokeWidth(2);
-        pion.setOnMouseClicked(event -> selection.accept(this.cheval));
+        pion.setOnMouseClicked(event -> selection.accept(cheval));
     }
 
     /**
@@ -42,45 +40,31 @@ public class ChevalView {
     }
 
     /**
-     * Met à jour l'état visuel du cheval.
+     * Fait clignoter le pion s'il peut être joué.
      *
      * @param selectionnable vrai si le cheval peut être choisi
      */
     public void afficherSelection(boolean selectionnable) {
-        arreterClignotement();
+        arreter();
+        pion.setCursor(selectionnable ? Cursor.HAND : Cursor.DEFAULT);
         if (selectionnable) {
-            FadeTransition clignotement = new FadeTransition(Duration.millis(450), pion);
+            clignotement = new FadeTransition(Duration.millis(450), pion);
             clignotement.setFromValue(1);
             clignotement.setToValue(0.35);
             clignotement.setCycleCount(Animation.INDEFINITE);
             clignotement.setAutoReverse(true);
-            pion.getProperties().put("clignotement", clignotement);
             clignotement.play();
         }
     }
 
     /**
-     * Rend le cheval terminé visuellement grisé.
+     * Arrête l'animation du pion, à appeler avant de le retirer de la scène.
      */
-    public void afficherTermine() {
-        arreterClignotement();
-        pion.setFill(Color.GRAY);
-        pion.setOpacity(1);
-    }
-
-    private void arreterClignotement() {
-        if (pion.getProperties().containsKey("clignotement")) {
-            ((FadeTransition) pion.getProperties().remove("clignotement")).stop();
+    public void arreter() {
+        if (clignotement != null) {
+            clignotement.stop();
+            clignotement = null;
         }
         pion.setOpacity(1);
-    }
-
-    private Color couleurPour(Couleur couleur) {
-        return switch (couleur) {
-            case ROUGE -> Color.CRIMSON;
-            case BLEU -> Color.DODGERBLUE;
-            case JAUNE -> Color.GOLD;
-            case VERT -> Color.LIMEGREEN;
-        };
     }
 }

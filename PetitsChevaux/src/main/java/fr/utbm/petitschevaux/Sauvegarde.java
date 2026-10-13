@@ -24,16 +24,18 @@ public final class Sauvegarde {
         List<Joueur> joueurs = jeu.getJoueurs();
         donnees.setProperty("joueurs", String.valueOf(joueurs.size()));
         donnees.setProperty("joueurCourant", String.valueOf(jeu.getJoueurCourant()));
+        donnees.setProperty("de", String.valueOf(jeu.getDe().getValeur()));
+        donnees.setProperty("attenteChoix", String.valueOf(jeu.isAttenteChoix()));
         for (int i = 0; i < joueurs.size(); i++) {
             Joueur joueur = joueurs.get(i);
             String prefixe = "joueur." + i + ".";
             donnees.setProperty(prefixe + "nom", joueur.getNom());
             donnees.setProperty(prefixe + "couleur", joueur.getCouleur().name());
+            donnees.setProperty(prefixe + "bot", String.valueOf(joueur.isBot()));
             List<Cheval> chevaux = joueur.getChevaux();
             for (int j = 0; j < chevaux.size(); j++) {
-                Cheval cheval = chevaux.get(j);
                 donnees.setProperty(prefixe + "cheval." + j,
-                        cheval.getPosition() + ";" + cheval.isSorti() + ";" + cheval.isTermine());
+                        String.valueOf(chevaux.get(j).getPosition()));
             }
         }
         try (Writer writer = Files.newBufferedWriter(fichier, StandardCharsets.UTF_8)) {
@@ -52,28 +54,40 @@ public final class Sauvegarde {
             for (int i = 0; i < nombreJoueurs; i++) {
                 String prefixe = "joueur." + i + ".";
                 Joueur joueur = new Joueur(lire(donnees, prefixe + "nom"),
-                        Couleur.valueOf(lire(donnees, prefixe + "couleur")));
-                List<Cheval> chevaux = joueur.getChevaux();
-                for (int j = 0; j < chevaux.size(); j++) {
-                    String[] etat = lire(donnees, prefixe + "cheval." + j).split(";");
-                    Cheval cheval = chevaux.get(j);
-                    cheval.setPosition(Integer.parseInt(etat[0]));
-                    cheval.setSorti(Boolean.parseBoolean(etat[1]));
-                    cheval.setTermine(Boolean.parseBoolean(etat[2]));
+                        Couleur.valueOf(lire(donnees, prefixe + "couleur")),
+                        Boolean.parseBoolean(donnees.getProperty(prefixe + "bot", "false")));
+                for (Cheval cheval : joueur.getChevaux()) {
+                    cheval.setPosition(lirePosition(lire(donnees,
+                            prefixe + "cheval." + cheval.getNumero())));
                 }
                 joueurs.add(joueur);
             }
             Jeu jeu = new Jeu(joueurs);
-            jeu.demarrerPartie();
-            int joueurCourant = Integer.parseInt(lire(donnees, "joueurCourant"));
-            if (joueurCourant < 0 || joueurCourant >= nombreJoueurs) {
-                throw new IOException("Joueur courant invalide : " + joueurCourant);
-            }
-            jeu.setJoueurCourant(joueurCourant);
+            // Le joueur courant est retrouvé par sa couleur : l'ordre du fichier peut différer.
+            Couleur couleurCourante = joueurs.get(
+                    Integer.parseInt(lire(donnees, "joueurCourant"))).getCouleur();
+            // Un lancer en attente de choix est conservé : recharger ne permet pas de relancer.
+            jeu.restaurerTour(couleurCourante.ordinal(),
+                    Integer.parseInt(donnees.getProperty("de", "0")),
+                    Boolean.parseBoolean(donnees.getProperty("attenteChoix", "false")));
             return jeu;
-        } catch (IllegalArgumentException | IllegalStateException | ArrayIndexOutOfBoundsException e) {
+        } catch (IllegalArgumentException | IndexOutOfBoundsException e) {
             throw new IOException("Fichier de sauvegarde invalide : " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * Lit la position d'un cheval. Accepte aussi l'ancien format « position;sorti;termine ».
+     */
+    private static int lirePosition(String valeur) {
+        String[] etat = valeur.split(";");
+        if (etat.length == 3 && Boolean.parseBoolean(etat[2])) {
+            return Cheval.CENTRE;
+        }
+        if (etat.length == 3 && !Boolean.parseBoolean(etat[1])) {
+            return Cheval.ECURIE;
+        }
+        return Integer.parseInt(etat[0].trim());
     }
 
     private static String lire(Properties donnees, String cle) throws IOException {

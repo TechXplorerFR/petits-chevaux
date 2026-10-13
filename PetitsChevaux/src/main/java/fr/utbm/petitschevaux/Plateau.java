@@ -3,146 +3,187 @@ package fr.utbm.petitschevaux;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Règles de déplacement sur le plateau.
+ *
+ * <p>La position d'un cheval est relative à son joueur :</p>
+ * <ul>
+ *     <li>0 : dans l'écurie ;</li>
+ *     <li>1 à 56 : sur la piste (1 = case de départ, 56 = pied de l'escalier) ;</li>
+ *     <li>57 à 62 : marches 1 à 6 de l'escalier ;</li>
+ *     <li>63 : au centre, le cheval a terminé.</li>
+ * </ul>
+ * <p>Depuis la marche 6, un 6 fait entrer le cheval au centre.</p>
+ */
 public class Plateau {
     public static final int NOMBRE_CASES = 56;
     public static final int NOMBRE_MARCHES = 6;
     public static final int POSITION_BAS_ESCALIER = NOMBRE_CASES;
     public static final int POSITION_ARRIVEE = NOMBRE_CASES + NOMBRE_MARCHES;
-    private List<Case> cases = new ArrayList<>();
+    public static final int CASES_PAR_QUARTIER = NOMBRE_CASES / Couleur.values().length;
+    /** Case de départ du premier quartier, sur la piste absolue. */
+    private static final int PREMIER_DEPART = CASES_PAR_QUARTIER / 2 + 1;
 
-    public Plateau() {
-        for (int i = 0; i <= POSITION_ARRIVEE; i++) {
-            Case uneCase = new Case();
-            uneCase.setNumero(i);
-            uneCase.setTypeCase(i == 0 ? TypeCase.DEPART
-                    : i == POSITION_ARRIVEE ? TypeCase.ARRIVEE
-                    : i > POSITION_BAS_ESCALIER ? TypeCase.SECURISEE : TypeCase.NORMALE);
-            cases.add(uneCase);
-        }
-    }
-
-    public List<Case> getCases() {
-        return cases;
-    }
-
-    public void setCases(List<Case> cases) {
-        this.cases = cases;
-    }
-
-    public Case getCase(int index) {
-        return cases.get(index);
-    }
-
-    public boolean estDeplacementValide(Cheval cheval, int count) {
-        if (cheval == null || count < 1 || count > 6 || !cheval.isSorti() || cheval.estArrive()) {
-            return false;
-        }
-        int currentPosition = cheval.getPosition();
-        if (currentPosition == POSITION_ARRIVEE) {
-            return count == 6;
-        }
-        if (currentPosition >= POSITION_BAS_ESCALIER && currentPosition < POSITION_ARRIVEE) {
-            return currentPosition + count <= POSITION_ARRIVEE;
-        }
-        return true;
+    /**
+     * Case absolue de la piste où sortent les chevaux d'une couleur.
+     *
+     * @param couleur couleur du joueur
+     * @return index de la case de départ sur la piste (0 à 55)
+     */
+    public static int decalageDepart(Couleur couleur) {
+        return couleur.ordinal() * CASES_PAR_QUARTIER + PREMIER_DEPART;
     }
 
     /**
-     * Vérifie un déplacement en tenant compte des autres chevaux.
+     * Vérifie un déplacement en tenant compte des autres chevaux :
+     * on ne peut ni dépasser un cheval, ni s'arrêter sur un de ses propres chevaux.
      *
      * @param joueur joueur qui joue
      * @param cheval cheval déplacé
-     * @param count nombre de cases
+     * @param valeur valeur du dé
      * @param joueurs joueurs de la partie
-     * @return vrai si le déplacement est possible sans dépasser un cheval
+     * @return vrai si le déplacement est autorisé
      */
-    public boolean estDeplacementValide(Joueur joueur, Cheval cheval, int count,
+    public boolean estDeplacementValide(Joueur joueur, Cheval cheval, int valeur,
             List<Joueur> joueurs) {
-        if (!estDeplacementValide(cheval, count) || joueur == null || joueurs == null) {
+        if (joueur == null || cheval == null || joueurs == null || valeur < 1 || valeur > 6
+                || !joueur.getChevaux().contains(cheval) || cheval.isTermine()) {
             return false;
         }
-        int destination = positionRelativeSuivante(cheval, count);
-        if (destination >= POSITION_BAS_ESCALIER) {
-            return true;
+        int position = cheval.getPosition();
+        if (!cheval.isSorti()) {
+            return valeur == 6 && !occupeeParLeJoueur(joueur, cheval, 1);
         }
-        int positionActuelle = positionAbsolue(joueur, cheval);
-        for (int pas = 1; pas <= count; pas++) {
-            int position = Math.floorMod(positionActuelle + pas, NOMBRE_CASES);
-            if (pas < count && occupee(position, joueur, cheval, joueurs)) {
+        if (position == POSITION_ARRIVEE) {
+            return valeur == 6;
+        }
+        if (position >= POSITION_BAS_ESCALIER) {
+            // Chaque marche se monte avec le dé égal à son numéro, si elle est libre.
+            return valeur == position - POSITION_BAS_ESCALIER + 1
+                    && !occupeeParLeJoueur(joueur, cheval, position + 1);
+        }
+        List<Integer> chemin = chemin(position, valeur);
+        for (int i = 0; i < chemin.size() - 1; i++) {
+            if (chevalSur(absolue(joueur, chemin.get(i)), cheval, joueurs) != null) {
                 return false;
             }
         }
-        return true;
+        return !occupeeParLeJoueur(joueur, cheval, chemin.get(chemin.size() - 1));
     }
 
     /**
-     * Convertit une position relative au joueur en position absolue sur la piste.
+     * Position relative atteinte par un cheval avec la valeur donnée, sans vérifier la validité.
+     * Sur la piste, un dé trop fort fait reculer depuis le pied de l'escalier.
+     *
+     * @param cheval cheval déplacé
+     * @param valeur valeur du dé
+     * @return position relative d'arrivée
+     */
+    public int destination(Cheval cheval, int valeur) {
+        int position = cheval.getPosition();
+        if (!cheval.isSorti()) {
+            return 1;
+        }
+        if (position >= POSITION_BAS_ESCALIER) {
+            return Math.min(position + 1, Cheval.CENTRE);
+        }
+        List<Integer> chemin = chemin(position, valeur);
+        return chemin.get(chemin.size() - 1);
+    }
+
+    /**
+     * Convertit la position d'un cheval en position absolue sur la piste.
      *
      * @param joueur propriétaire du cheval
      * @param cheval cheval concerné
-     * @return position absolue, ou -1 si le cheval est dans son écurie
+     * @return position absolue, ou -1 si le cheval n'est pas sur la piste
      */
     public int positionAbsolue(Joueur joueur, Cheval cheval) {
-        if (joueur == null || cheval == null || !cheval.isSorti()
-                || cheval.getPosition() >= POSITION_BAS_ESCALIER) {
+        if (joueur == null || cheval == null || !cheval.estEnJeu()) {
             return -1;
         }
-        return Math.floorMod(decalageDepart(joueur.getCouleur()) + cheval.getPosition() - 1,
-                NOMBRE_CASES);
+        return absolue(joueur, cheval.getPosition());
     }
 
-    public void gererCapture(Cheval cheval, List<Joueur> joueurs) {
-        if (cheval == null || joueurs == null || cheval.estArrive() || !cheval.isSorti()) {
+    /**
+     * Indique si le déplacement enverrait un cheval adverse à l'écurie.
+     *
+     * @param joueur propriétaire du cheval
+     * @param cheval cheval déplacé
+     * @param valeur valeur du dé
+     * @param joueurs joueurs de la partie
+     * @return vrai si un adversaire occupe la case d'arrivée
+     */
+    public boolean capturerait(Joueur joueur, Cheval cheval, int valeur, List<Joueur> joueurs) {
+        Cheval occupant = chevalSur(absolue(joueur, destination(cheval, valeur)), cheval, joueurs);
+        return occupant != null && !joueur.getChevaux().contains(occupant);
+    }
+
+    /**
+     * Renvoie à l'écurie les chevaux adverses présents sur la case du cheval.
+     *
+     * @param joueur propriétaire du cheval
+     * @param cheval cheval qui vient d'arriver
+     * @param joueurs joueurs de la partie
+     */
+    public void gererCapture(Joueur joueur, Cheval cheval, List<Joueur> joueurs) {
+        int position = positionAbsolue(joueur, cheval);
+        if (position < 0) {
             return;
         }
-        Joueur proprietaire = trouverProprietaire(cheval, joueurs);
-        int position = positionAbsolue(proprietaire, cheval);
-        for (Joueur joueur : joueurs) {
-            for (Cheval autre : joueur.getChevaux()) {
-                if (autre != cheval && autre.isSorti() && !autre.isTermine()
-                        && joueur != proprietaire
-                        && positionAbsolue(joueur, autre) == position) {
+        for (Joueur autreJoueur : joueurs) {
+            if (autreJoueur == joueur) {
+                continue;
+            }
+            for (Cheval autre : autreJoueur.getChevaux()) {
+                if (positionAbsolue(autreJoueur, autre) == position) {
                     autre.rentrerEcurie();
                 }
             }
         }
     }
 
-    public void gererCapture() {
-        // Conservation de l'ancienne signature pour compatibilité.
+    /**
+     * Positions relatives traversées case par case, avec rebond au pied de l'escalier.
+     */
+    private List<Integer> chemin(int position, int valeur) {
+        List<Integer> chemin = new ArrayList<>();
+        int courante = position;
+        int sens = 1;
+        for (int pas = 0; pas < valeur; pas++) {
+            if (courante == POSITION_BAS_ESCALIER) {
+                sens = -1;
+            }
+            courante += sens;
+            chemin.add(courante);
+        }
+        return chemin;
     }
 
-    private int positionRelativeSuivante(Cheval cheval, int count) {
-        return cheval.getPosition() + count;
+    private int absolue(Joueur joueur, int positionRelative) {
+        if (positionRelative < 1 || positionRelative > POSITION_BAS_ESCALIER) {
+            return -1;
+        }
+        return Math.floorMod(decalageDepart(joueur.getCouleur()) + positionRelative - 1,
+                NOMBRE_CASES);
     }
 
-    private boolean occupee(int position, Joueur joueur, Cheval cheval, List<Joueur> joueurs) {
-        for (Joueur autreJoueur : joueurs) {
-            for (Cheval autre : autreJoueur.getChevaux()) {
-                if (autre != cheval && autre.isSorti() && !autre.isTermine()
-                        && positionAbsolue(autreJoueur, autre) == position) {
-                    return true;
+    private boolean occupeeParLeJoueur(Joueur joueur, Cheval cheval, int positionRelative) {
+        return joueur.getChevaux().stream().anyMatch(autre -> autre != cheval
+                && autre.estEnJeu() && autre.getPosition() == positionRelative);
+    }
+
+    private Cheval chevalSur(int positionAbsolue, Cheval ignore, List<Joueur> joueurs) {
+        if (positionAbsolue < 0) {
+            return null;
+        }
+        for (Joueur joueur : joueurs) {
+            for (Cheval autre : joueur.getChevaux()) {
+                if (autre != ignore && positionAbsolue(joueur, autre) == positionAbsolue) {
+                    return autre;
                 }
             }
         }
-        return false;
-    }
-
-    private Joueur trouverProprietaire(Cheval cheval, List<Joueur> joueurs) {
-        for (Joueur joueur : joueurs) {
-            if (joueur.getChevaux().contains(cheval)) {
-                return joueur;
-            }
-        }
         return null;
-    }
-
-    private int decalageDepart(Couleur couleur) {
-        return switch (couleur) {
-            case JAUNE -> 8;
-            case ROUGE -> 22;
-            case BLEU -> 36;
-            case VERT -> 50;
-        };
     }
 }

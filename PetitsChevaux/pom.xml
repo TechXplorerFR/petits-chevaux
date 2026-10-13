@@ -47,9 +47,15 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.13.0</version>
                 <configuration>
-                    <source>16</source>
-                    <target>16</target>
+                    <!-- JavaFX 21 nécessite Java 17 minimum -->
+                    <release>17</release>
                 </configuration>
+            </plugin>
+            <plugin>
+                <!-- Version récente nécessaire pour exécuter les tests JUnit 5 -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.2</version>
             </plugin>
             <plugin>
                 <groupId>org.openjfx</groupId>
@@ -60,7 +66,7 @@
                         <!-- Default configuration for running with: mvn clean javafx:run -->
                         <id>default-cli</id>
                         <configuration>
-                            <mainClass>fr.utbm.petitschevaux/fr.utbm.petitschevaux.HelloApplication</mainClass>
+                            <mainClass>fr.utbm.petitschevaux/fr.utbm.petitschevaux.PetitsChevauxApp</mainClass>
                             <launcher>app</launcher>
                             <jlinkZipName>app</jlinkZipName>
                             <jlinkImageName>app</jlinkImageName>
