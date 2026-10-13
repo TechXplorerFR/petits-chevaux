@@ -1,0 +1,112 @@
+classDiagram
+direction TB
+
+class PetitsChevauxApp {
+  +afficherMenu(Stage)$
+  +afficherPartie(Stage, Jeu)$
+  +afficherErreur(String, Exception)$
+}
+class Menu {
+  -nombreJoueurs : Spinner
+  -onNouvellePartie()
+  -onChargerPartie()
+}
+class PartieController {
+  -jeu : Jeu
+  +setJeu(Jeu)
+  -onLancerDe()
+  -onChevalSelectionne(Cheval)
+  -jouerLesBots()
+  -onSauvegarder()
+}
+class Sauvegarde {
+  +sauvegarder(Jeu, Path)$
+  +charger(Path)$ Jeu
+}
+class Jeu {
+  -joueurCourant : int
+  -etat : Etat
+  -vainqueur : Joueur
+  +lancerDe() int
+  +getChevauxDeplacables() List~Cheval~
+  +jouerCheval(Cheval) boolean
+  +jouerTourBot() int
+  +choisirPremierJoueur() Joueur
+  +getHistorique() List~Lancer~
+}
+class Etat {
+  <<enumeration>>
+  ATTENTE_LANCER
+  ATTENTE_CHOIX
+  TERMINEE
+}
+class Lancer {
+  <<record>>
+  joueur : Joueur
+  valeur : int
+}
+class Plateau {
+  +estDeplacementValide(Joueur, Cheval, int, List) boolean
+  +destination(Cheval, int) int
+  +capturerait(Joueur, Cheval, int, List) boolean
+  +gererCapture(Joueur, Cheval, List)
+  +decalageDepart(Couleur)$ int
+}
+class De {
+  -valeur : int
+  +lancer() int
+  +getValeur() int
+}
+class Joueur {
+  -nom : String
+  -bot : boolean
+  +aGagne() boolean
+}
+class Cheval {
+  -numero : int
+  -position : int
+  +isSorti() boolean
+  +isTermine() boolean
+  +sortir()
+  +rentrerEcurie()
+}
+class Couleur {
+  <<enumeration>>
+  JAUNE
+  ROUGE
+  BLEU
+  VERT
+}
+class PlateauView {
+  +afficherPossibilites(List, int)
+  +dessinerPlateau()
+}
+class Quartier
+class EcurieView
+class ChevalView
+class DeView
+class Rendu {
+  <<utility>>
+  +couleur(Couleur)$ Color
+}
+
+PetitsChevauxApp ..> Menu : affiche
+PetitsChevauxApp ..> PartieController : affiche
+Menu ..> Jeu : crée
+Menu ..> Sauvegarde : charge
+PartieController --> Jeu
+PartieController --> PlateauView
+PartieController --> DeView
+PartieController ..> Sauvegarde : sauvegarde
+Jeu *-- Plateau
+Jeu *-- De
+Jeu o-- "4" Joueur
+Jeu --> Etat
+Jeu *-- Lancer
+Joueur *-- "4" Cheval
+Joueur --> Couleur
+PlateauView *-- "4" Quartier
+PlateauView *-- "4" EcurieView
+PlateauView *-- ChevalView
+PlateauView ..> Plateau
+PlateauView ..> Rendu
