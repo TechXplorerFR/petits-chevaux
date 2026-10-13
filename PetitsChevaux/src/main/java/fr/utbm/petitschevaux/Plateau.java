@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Plateau {
-    public static final int NOMBRE_CASES = 24;
+    public static final int NOMBRE_CASES = 56;
     public static final int NOMBRE_MARCHES = 6;
     public static final int POSITION_BAS_ESCALIER = NOMBRE_CASES;
     public static final int POSITION_ARRIVEE = NOMBRE_CASES + NOMBRE_MARCHES;

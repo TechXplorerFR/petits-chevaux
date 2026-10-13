@@ -9,7 +9,6 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.transform.Rotate;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,12 +21,10 @@ public class PlateauView {
     private static final int MARCHES = Plateau.NOMBRE_MARCHES;
     private static final int CASES_PAR_QUARTIER = Plateau.NOMBRE_CASES / 4;
     private static final int LONGUEUR_COULOIR = (CASES_PAR_QUARTIER - 2) / 2; // 6 si 56 cases
-    private static final Couleur[] COULEURS_QUARTIERS = {
-            Couleur.JAUNE, Couleur.ROUGE, Couleur.BLEU, Couleur.VERT
-    };
-
     private final Plateau plateau;
     private final List<Joueur> joueurs;
+    private final List<Quartier> quartiers;
+    private final List<Couleur> couleursQuartiers;
     private final Pane racine = new Pane();
     private final List<double[]> positionsCases = new ArrayList<>();
     private final Map<Couleur, List<double[]>> positionsArrivee = new HashMap<>();
@@ -37,8 +34,19 @@ public class PlateauView {
     }
 
     public PlateauView(Plateau plateau, List<Joueur> joueurs) {
+        if (plateau == null) {
+            throw new IllegalArgumentException("Le plateau est obligatoire.");
+        }
         this.plateau = plateau;
-        this.joueurs = joueurs;
+        this.joueurs = joueurs == null ? List.of() : List.copyOf(joueurs);
+        this.quartiers = List.of(
+                new Quartier(Couleur.JAUNE),
+                new Quartier(Couleur.ROUGE),
+                new Quartier(Couleur.BLEU),
+                new Quartier(Couleur.VERT));
+        this.couleursQuartiers = quartiers.stream()
+                .map(Quartier::getCouleur)
+                .toList();
         racine.setPrefSize(TAILLE, TAILLE);
         racine.setMinSize(TAILLE, TAILLE);
     }
@@ -59,10 +67,11 @@ public class PlateauView {
 
         dessinerCentre();
 
-        for (int quartier = 0; quartier < COULEURS_QUARTIERS.length; quartier++) {
-            Couleur couleur = COULEURS_QUARTIERS[quartier];
-            Group dessinQuartier = creerQuartier(couleur);
-            dessinQuartier.getTransforms().add(new Rotate(quartier * 90, CENTRE, CENTRE));
+        for (int quartier = 0; quartier < quartiers.size(); quartier++) {
+            Quartier quartierModele = quartiers.get(quartier);
+            Couleur couleur = quartierModele.getCouleur();
+            Group dessinQuartier = quartierModele.getDessin();
+            dessinQuartier.getTransforms().setAll(new Rotate(quartier * 90, CENTRE, CENTRE));
             racine.getChildren().add(dessinQuartier);
 
             for (int[] g : cheminBrasDuHaut()) {
@@ -107,45 +116,6 @@ public class PlateauView {
 
     public void mettreAJourPlateau() {
         dessinerPlateau();
-    }
-
-    private Group creerQuartier(Couleur couleur) {
-        Group quartier = new Group();
-        Color teinte = couleurPour(couleur);
-        Color fondTeinte = teinte.deriveColor(0, 0.7, 1.15, 1);
-        Color fondEscalier = fondTeinte.interpolate(Color.WHITE, 0.35);
-
-        Rectangle maison = new Rectangle(420, 20, 160, 160);
-        maison.setArcWidth(8);
-        maison.setArcHeight(8);
-        maison.setFill(fondTeinte);
-        maison.setStroke(teinte.darker());
-        maison.setStrokeWidth(3);
-        quartier.getChildren().add(maison);
-
-        Rectangle ecurie = new Rectangle(440, 40, 120, 120);
-        ecurie.setArcWidth(12);
-        ecurie.setArcHeight(12);
-        ecurie.setFill(Color.WHITE);
-        ecurie.setStroke(teinte.darker());
-        ecurie.setStrokeWidth(2);
-        quartier.getChildren().add(ecurie);
-
-        for (double x : new double[] { 475, 525 }) {
-            for (double y : new double[] { 75, 125 }) {
-                Circle placeCheval = new Circle(x, y, 17, teinte);
-                placeCheval.setStroke(Color.WHITE);
-                placeCheval.setStrokeWidth(2);
-                quartier.getChildren().add(placeCheval);
-            }
-        }
-
-        for (int i = 0; i < MARCHES; i++) {
-            double[] p = enPixels(new int[] { 0, -(MARCHES - i) });
-            quartier.getChildren().add(creerCase(p[0], p[1], fondEscalier));
-        }
-
-        return quartier;
     }
 
     private Rectangle creerCase(double x, double y, Color couleur) {
@@ -209,7 +179,7 @@ public class PlateauView {
     }
 
     private int decalageDepart(Couleur couleur) {
-        int quartier = Arrays.asList(COULEURS_QUARTIERS).indexOf(couleur);
+        int quartier = couleursQuartiers.indexOf(couleur);
         return Math.floorMod(quartier * CASES_PAR_QUARTIER + LONGUEUR_COULOIR + 2,
                 Plateau.NOMBRE_CASES);
     }
@@ -218,14 +188,14 @@ public class PlateauView {
         for (int i = 0; i < positionsCases.size(); i++) {
             double[] p = positionsCases.get(i);
             Color fond = Color.WHITE;
-            for (Couleur couleur : COULEURS_QUARTIERS) {
+            for (Couleur couleur : couleursQuartiers) {
                 if (i == decalageDepart(couleur))
                     fond = couleurPour(couleur);
             }
             racine.getChildren().add(creerCase(p[0], p[1], fond));
         }
 
-        for (Couleur couleur : COULEURS_QUARTIERS) {
+        for (Couleur couleur : couleursQuartiers) {
             int indexDepart = decalageDepart(couleur);
             double[] depart = positionsCases.get(indexDepart);
             double[] suivante = positionsCases.get((indexDepart + 1) % positionsCases.size());
