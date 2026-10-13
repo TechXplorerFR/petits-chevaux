@@ -4,7 +4,6 @@ import javafx.scene.Group;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
-import javafx.scene.shape.Polygon;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.transform.Rotate;
 
@@ -24,14 +23,6 @@ public class PlateauView {
     private static final int LONGUEUR_COULOIR = (CASES_PAR_QUARTIER - 2) / 2; // 6 si 56 cases
     private static final Couleur[] COULEURS_QUARTIERS = {
             Couleur.JAUNE, Couleur.ROUGE, Couleur.BLEU, Couleur.VERT
-    };
-    private static final double[][] CASES_QUART = {
-            { 320, 200 }, { 360, 200 }, { 400, 200 },
-            { 400, 240 }, { 400, 280 }, { 400, 320 }
-    };
-    private static final double[][] LIGNE_ARRIVEE = {
-            { 300, 100 }, { 300, 132 }, { 300, 164 },
-            { 300, 196 }, { 300, 228 }, { 300, 260 }
     };
 
     private final Plateau plateau;
