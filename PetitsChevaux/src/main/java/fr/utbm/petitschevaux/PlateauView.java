@@ -26,12 +26,12 @@ public class PlateauView {
             Couleur.JAUNE, Couleur.ROUGE, Couleur.BLEU, Couleur.VERT
     };
     private static final double[][] CASES_QUART = {
-            {320, 200}, {360, 200}, {400, 200},
-            {400, 240}, {400, 280}, {400, 320}
+            { 320, 200 }, { 360, 200 }, { 400, 200 },
+            { 400, 240 }, { 400, 280 }, { 400, 320 }
     };
     private static final double[][] LIGNE_ARRIVEE = {
-            {300, 100}, {300, 132}, {300, 164},
-            {300, 196}, {300, 228}, {300, 260}
+            { 300, 100 }, { 300, 132 }, { 300, 164 },
+            { 300, 196 }, { 300, 228 }, { 300, 260 }
     };
 
     private final Plateau plateau;
@@ -88,7 +88,6 @@ public class PlateauView {
     }
 
     public void afficherChevaux() {
-        Map<Integer, Integer> chevauxParCase = new HashMap<>();
         for (Joueur joueur : joueurs) {
             for (Cheval cheval : joueur.getChevaux()) {
                 if (!cheval.isSorti() || cheval.isTermine()) {
@@ -101,12 +100,7 @@ public class PlateauView {
                             decalageDepart(joueur.getCouleur()) + cheval.getPosition() - 1,
                             positionsCases.size());
                     position = positionsCases.get(index);
-                    int decalage = chevauxParCase.merge(index, 1, Integer::sum) - 1;
-                    double angle = 2 * Math.PI * decalage / 4;
-                    racine.getChildren().add(creerPion(
-                            position[0] + 8 * Math.cos(angle),
-                            position[1] + 8 * Math.sin(angle),
-                            joueur.getCouleur()));
+                    racine.getChildren().add(creerPion(position[0], position[1], joueur.getCouleur()));
                 } else {
                     List<double[]> ligne = positionsArrivee.get(joueur.getCouleur());
                     int index = cheval.getPosition() - Plateau.POSITION_BAS_ESCALIER;
@@ -144,8 +138,8 @@ public class PlateauView {
         ecurie.setStrokeWidth(2);
         quartier.getChildren().add(ecurie);
 
-        for (double x : new double[]{475, 525}) {
-            for (double y : new double[]{75, 125}) {
+        for (double x : new double[] { 475, 525 }) {
+            for (double y : new double[] { 75, 125 }) {
                 Circle placeCheval = new Circle(x, y, 17, teinte);
                 placeCheval.setStroke(Color.WHITE);
                 placeCheval.setStrokeWidth(2);
@@ -191,14 +185,19 @@ public class PlateauView {
         racine.getChildren().add(centreRond);
     }
 
-    /** Cases du bras du haut, dans le sens horaire : coin, couloir gauche, bout, couloir droit. */
+    /**
+     * Cases du bras du haut, dans le sens horaire : coin, couloir gauche, bout,
+     * couloir droit.
+     */
     private List<int[]> cheminBrasDuHaut() {
         int n = LONGUEUR_COULOIR;
         List<int[]> chemin = new ArrayList<>();
-        chemin.add(new int[]{-1, -1});
-        for (int k = 2; k <= n + 1; k++) chemin.add(new int[]{-1, -k});
-        chemin.add(new int[]{0, -(n + 1)});
-        for (int k = n + 1; k >= 2; k--) chemin.add(new int[]{1, -k});
+        chemin.add(new int[] { -1, -1 });
+        for (int k = 2; k <= n + 1; k++)
+            chemin.add(new int[] { -1, -k });
+        chemin.add(new int[] { 0, -(n + 1) });
+        for (int k = n + 1; k >= 2; k--)
+            chemin.add(new int[] { 1, -k });
         return chemin;
     }
 
@@ -209,11 +208,11 @@ public class PlateauView {
             x = -y;
             y = ancienX;
         }
-        return new int[]{x, y};
+        return new int[] { x, y };
     }
 
     private double[] enPixels(int[] g) {
-        return new double[]{CENTRE + g[0] * PAS, CENTRE + g[1] * PAS};
+        return new double[] { CENTRE + g[0] * PAS, CENTRE + g[1] * PAS };
     }
 
     private int decalageDepart(Couleur couleur) {
@@ -227,7 +226,8 @@ public class PlateauView {
             double[] p = positionsCases.get(i);
             Color fond = Color.WHITE;
             for (Couleur couleur : COULEURS_QUARTIERS) {
-                if (i == decalageDepart(couleur)) fond = couleurPour(couleur);
+                if (i == decalageDepart(couleur))
+                    fond = couleurPour(couleur);
             }
             racine.getChildren().add(creerCase(p[0], p[1], fond));
         }
