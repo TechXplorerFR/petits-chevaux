@@ -1,0 +1,111 @@
+package fr.utbm.petitschevaux;
+
+import javafx.application.Platform;
+import javafx.fxml.FXML;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Label;
+import javafx.scene.control.Spinner;
+import javafx.scene.control.SpinnerValueFactory;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Contrôleur du menu principal : choix du nombre de joueurs,
+ * lancement d'une nouvelle partie ou chargement d'une partie sauvegardée.
+ */
+public class Menu {
+    public static final int MIN_JOUEURS = 2;
+    public static final int MAX_JOUEURS = 4;
+
+    @FXML
+    private Spinner<Integer> nombreJoueurs;
+
+    @FXML
+    private VBox champsJoueurs;
+
+    private final List<HBox> lignesJoueurs = new ArrayList<>();
+    private final List<TextField> nomsJoueurs = new ArrayList<>();
+
+    @FXML
+    private void initialize() {
+        nombreJoueurs.setValueFactory(
+                new SpinnerValueFactory.IntegerSpinnerValueFactory(MIN_JOUEURS, MAX_JOUEURS, MIN_JOUEURS));
+
+        Couleur[] couleurs = Couleur.values();
+        for (int i = 0; i < MAX_JOUEURS; i++) {
+            Label couleur = new Label(couleurs[i].name());
+            couleur.setPrefWidth(70);
+            TextField nom = new TextField("Joueur " + (i + 1));
+            HBox ligne = new HBox(10, couleur, nom);
+            nomsJoueurs.add(nom);
+            lignesJoueurs.add(ligne);
+            champsJoueurs.getChildren().add(ligne);
+        }
+
+        nombreJoueurs.valueProperty().addListener((obs, ancien, nouveau) -> afficherChampsJoueurs(nouveau));
+        afficherChampsJoueurs(nombreJoueurs.getValue());
+    }
+
+    private void afficherChampsJoueurs(int nombre) {
+        for (int i = 0; i < lignesJoueurs.size(); i++) {
+            HBox ligne = lignesJoueurs.get(i);
+            ligne.setVisible(i < nombre);
+            ligne.setManaged(i < nombre);
+        }
+    }
+
+    @FXML
+    private void onNouvellePartie() {
+        Couleur[] couleurs = Couleur.values();
+        List<Joueur> joueurs = new ArrayList<>();
+        for (int i = 0; i < nombreJoueurs.getValue(); i++) {
+            String nom = nomsJoueurs.get(i).getText().trim();
+            joueurs.add(new Joueur(nom.isEmpty() ? "Joueur " + (i + 1) : nom, couleurs[i]));
+        }
+        Jeu jeu = new Jeu(joueurs);
+        jeu.demarrerPartie();
+        afficherPartie(jeu);
+    }
+
+    @FXML
+    private void onChargerPartie() {
+        FileChooser choix = new FileChooser();
+        choix.setTitle("Charger une partie");
+        choix.getExtensionFilters().add(
+                new FileChooser.ExtensionFilter("Partie de petits chevaux", "*." + Sauvegarde.EXTENSION));
+        File fichier = choix.showOpenDialog(getStage());
+        if (fichier == null) {
+            return;
+        }
+        try {
+            afficherPartie(Sauvegarde.charger(fichier.toPath()));
+        } catch (IOException e) {
+            new Alert(Alert.AlertType.ERROR, "Impossible de charger la partie :\n" + e.getMessage()).showAndWait();
+        }
+    }
+
+    @FXML
+    private void onQuitter() {
+        Platform.exit();
+    }
+
+    private void afficherPartie(Jeu jeu) {
+        try {
+            HelloApplication.afficherPartie(getStage(), jeu);
+        } catch (IOException e) {
+            new Alert(Alert.AlertType.ERROR, "Impossible d'ouvrir la partie :\n" + e.getMessage()).showAndWait();
+        }
+    }
+
+    private Stage getStage() {
+        return (Stage) champsJoueurs.getScene().getWindow();
+    }
+}

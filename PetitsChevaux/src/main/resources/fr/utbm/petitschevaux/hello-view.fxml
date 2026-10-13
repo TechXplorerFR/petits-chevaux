@@ -28,6 +28,9 @@
             <VBox fx:id="historiqueLancers" prefHeight="170.0" minHeight="170.0"
                   maxHeight="170.0" spacing="2.0"
                   style="-fx-border-color: #c6c0b5; -fx-border-radius: 4; -fx-padding: 8;"/>
+            <Button text="Choisir le cheval" onAction="#onChoisirCheval"/>
+            <Button text="Sauvegarder" onAction="#onSauvegarder"/>
+            <Button text="Menu principal" onAction="#onRetourMenu"/>
         </VBox>
     </right>
 </BorderPane>
