@@ -1,127 +1,58 @@
-# 🐴 Petits Chevaux 🎲
+# Petits chevaux
 
 ![GitHub stars](https://img.shields.io/github/stars/TechXplorerFR/petits-chevaux?style=social) ![GitHub watchers](https://img.shields.io/github/watchers/TechXplorerFR/petits-chevaux?style=social) ![GitHub repo size](https://img.shields.io/github/repo-size/TechXplorerFR/petits-chevaux) ![GitHub language count](https://img.shields.io/github/languages/count/TechXplorerFR/petits-chevaux) ![GitHub top language](https://img.shields.io/github/languages/top/TechXplorerFR/petits-chevaux) ![GitHub last commit](https://img.shields.io/github/last-commit/TechXplorerFR/petits-chevaux?color=red)
 
-Les Petits Chevaux est une **version numérique du célèbre jeu de société** dans laquelle les joueurs doivent faire avancer leurs chevaux autour du plateau pour les ramener jusqu'à leur écurie d'arrivée. 🏇🎲
+Jeu de petits chevaux en JavaFX, réalisé dans le cadre du projet PR70 (UTBM).
 
-Développé en **Java avec JavaFX et Gradle**, ce projet vise à proposer une expérience de jeu conviviale et intuitive, tout en respectant les règles traditionnelles des Petits Chevaux.
+De 1 à 4 joueurs humains ; les couleurs restantes sont jouées par des bots.
+Les parties peuvent être sauvegardées et rechargées (fichiers `.pcx`).
 
-Il s'inscrit dans le cadre du projet de l'UE PR70 (Programmation Orientée Objet) à l'UTBM.
+## Lancer le jeu
 
-## 🔑 Fonctionnalités principales
+Prérequis : un JDK 17 ou plus récent (`JAVA_HOME` doit pointer dessus).
 
-- 🎲 **Lancers de dés** pour déterminer les déplacements des chevaux.
-- 🐎 **Déplacement des chevaux** sur le plateau de jeu.
-- 🎨 **Interface graphique JavaFX** pour une expérience visuelle interactive.
-- 👥 **Gestion des joueurs** et des tours de jeu.
-- 🏁 **Gestion de la victoire** pour identifier le joueur ayant terminé le parcours avec tous ses chevaux.
+```bash
+cd PetitsChevaux
+./mvnw javafx:run
+```
 
-<!-- TODO: Ajout image -->
-![Aperçu du jeu Petits Chevaux](demo.png)
+Depuis IntelliJ : lancer la classe `fr.utbm.petitschevaux.Launcher`.
 
-## 🚀 Installation
+## Lancer les tests
 
-### Prérequis 🛠️
+```bash
+cd PetitsChevaux
+./mvnw test
+```
 
-Assurez-vous d'avoir installé les outils suivants :
+## Règles implémentées
 
-- **Java JDK** : version compatible avec celle configurée dans le projet.
-- **Gradle** : facultatif si le projet contient le Gradle Wrapper (`gradlew`).
-- **Git** : pour cloner le dépôt.
+- Le premier joueur est tiré au dé (les ex æquo relancent), puis on joue dans le sens horaire :
+  jaune, rouge, bleu, vert.
+- Un **6** est nécessaire pour sortir un cheval de l'écurie, et un 6 fait rejouer.
+- Un cheval fait le tour de la piste (56 cases) jusqu'au pied de son escalier.
+  Il doit y arriver au compte exact : un dé trop fort le fait reculer d'autant.
+- On ne peut **pas dépasser** un cheval, ni s'arrêter sur un de ses propres chevaux.
+  S'arrêter sur un cheval adverse le **renvoie à son écurie**.
+- L'escalier se monte marche par marche : il faut un 1 pour la première marche, un 2 pour la
+  deuxième… jusqu'au 6, puis un dernier 6 pour entrer au centre.
+- Le premier joueur qui ramène ses quatre chevaux au centre gagne.
 
-> [!TIP]
-> Nous recommandons d'utiliser le Gradle Wrapper fourni avec le projet (`gradlew` ou `gradlew.bat`) afin d'utiliser automatiquement la version de Gradle prévue pour le projet.
+Les bots capturent dès qu'ils le peuvent, sinon sortent un cheval, sinon avancent leur cheval
+le plus proche de l'arrivée.
 
-### Installation depuis GitHub 🏗️
+## Organisation du code
 
-1. **Cloner le dépôt :**
+Tout est dans le paquet `fr.utbm.petitschevaux` (`PetitsChevaux/src/main/java`).
 
-   ```bash
-   git clone https://github.com/OWNER/REPOSITORY.git
-   cd REPOSITORY
-   ```
+| Rôle | Classes |
+|---|---|
+| Modèle (sans JavaFX) | `Jeu` (tours, bots, victoire), `Plateau` (règles de déplacement), `Joueur`, `Cheval`, `De`, `Couleur` |
+| Sauvegarde | `Sauvegarde` |
+| Vues | `PlateauView`, `Quartier` (escaliers), `EcurieView`, `ChevalView`, `DeView`, `Rendu` (couleurs et dimensions communes) |
+| Contrôleurs | `Menu` (`menu-view.fxml`), `PartieController` (`partie-view.fxml`) |
+| Lancement | `Launcher`, `PetitsChevauxApp` |
 
-2. **Compiler le projet :**
-
-   Sous Linux/macOS :
-
-   ```bash
-   ./gradlew build
-   ```
-
-   Sous Windows (PowerShell) :
-
-   ```powershell
-   .\gradlew.bat build
-   ```
-
-3. **Lancer le jeu :**
-
-   Sous Linux/macOS :
-
-   ```bash
-   ./gradlew run
-   ```
-
-   Sous Windows (PowerShell) :
-
-   ```powershell
-   .\gradlew.bat run
-   ```
-
-> [!NOTE]
-> Ces commandes supposent que le projet configure la tâche Gradle `run` et les dépendances JavaFX nécessaires. Si votre projet utilise une configuration différente, adaptez les commandes en conséquence.
-
-> [!CAUTION]
-> La branche de développement peut contenir des fonctionnalités incomplètes ou instables. Utilisez-la avec précaution.
-
-## 🎮 Comment jouer ?
-
-Le but du jeu est d'être le premier joueur à ramener tous ses chevaux jusqu'à la zone d'arrivée.
-
-1. **Choisissez votre couleur** parmi celles disponibles.
-2. **Lancez le dé** pour déterminer le nombre de cases à parcourir.
-3. **Déplacez vos chevaux** en respectant les règles du jeu.
-4. **Anticipez les déplacements de vos adversaires** pour optimiser votre progression.
-5. **Ramenez tous vos chevaux à l'arrivée** pour remporter la partie !
-
-> [!TIP]
-> Planifiez vos déplacements et choisissez judicieusement le cheval à faire avancer pour augmenter vos chances de victoire. 🧠
-
-## 📚 Documentation
-
-## 📜 Licence
-
-Ce projet est distribué sous la licence [MIT](./LICENSE.md), si celle-ci est bien celle retenue pour le projet.
-
-## 💬 Support
-
-Vous avez rencontré un problème ou souhaitez proposer une amélioration ?
-
-N'hésitez pas à ouvrir une issue dans la [section Issues](https://github.com/OWNER/REPOSITORY/issues) du dépôt.
-
-Nous accueillons avec plaisir vos retours et suggestions afin d'améliorer le jeu. 💡
-
-## 👥 Contribution
-
-Vous souhaitez contribuer au projet ?
-
-1. Forkez le dépôt.
-2. Créez une branche dédiée à votre fonctionnalité.
-3. Effectuez vos modifications.
-4. Testez votre code.
-5. Soumettez une pull request en décrivant vos changements.
-
-## ✍️ Auteurs et remerciements
-
-### Notre équipe 🚀
-
-| Nom | Rôle | Liens |
-| :--- | :--- | :--- |
-| **Antoine PREVOST** | Développeur | [GitHub](https://github.com/TechXplorerFR) |
-| **Alban GRATIA** | Développeur | [GitHub](https://github.com/Albtros26) |
-| **Colin AUBERT** | Développeur | [GitHub](https://github.com/Cocolin67) |
-
----
-
-**Amusez-vous bien avec les Petits Chevaux !** 🐴🎲🎉
+La position d'un cheval est relative à son joueur : 0 = écurie, 1 à 56 = piste
+(1 = case de départ, 56 = pied de l'escalier), 57 à 62 = marches, 63 = centre.
+`Plateau.positionAbsolue` la convertit en case réelle de la piste.

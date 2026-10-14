@@ -23,12 +23,11 @@
             <Label fx:id="resultatDe" text="Résultat du dé : " wrapText="true"/>
             <StackPane fx:id="vueDe" prefHeight="70.0" prefWidth="70.0"/>
             <Label fx:id="information" text="Joueur 1 - lancez le dé" wrapText="true"/>
-            <Button text="Lancer le dé" onAction="#onLancerDe"/>
+            <Button fx:id="boutonLancer" text="Lancer le dé" onAction="#onLancerDe" defaultButton="true"/>
             <VBox fx:id="joueursAffiches" spacing="4.0"/>
             <VBox fx:id="historiqueLancers" prefHeight="170.0" minHeight="170.0"
                   maxHeight="170.0" spacing="2.0"
                   style="-fx-border-color: #c6c0b5; -fx-border-radius: 4; -fx-padding: 8;"/>
-            <Button text="Choisir le cheval" onAction="#onChoisirCheval"/>
             <Button text="Sauvegarder" onAction="#onSauvegarder"/>
             <Button text="Menu principal" onAction="#onRetourMenu"/>
         </VBox>

@@ -1,92 +1,112 @@
 classDiagram
 direction TB
 
-class Jeu {
-  -List~Joueur~ joueurs
-  -Plateau plateau
-  -De de
-  -int joueurCourant
-  +demarrerPartie()
-  +jouerTour()
-  +passerAuJoueurSuivant()
-  +verifierVictoire() boolean
+class PetitsChevauxApp {
+  +afficherMenu(Stage)$
+  +afficherPartie(Stage, Jeu)$
+  +afficherErreur(String, Exception)$
 }
-
+class Menu {
+  -nombreJoueurs : Spinner
+  -onNouvellePartie()
+  -onChargerPartie()
+}
+class PartieController {
+  -jeu : Jeu
+  +setJeu(Jeu)
+  -onLancerDe()
+  -onChevalSelectionne(Cheval)
+  -jouerLesBots()
+  -onSauvegarder()
+}
+class Sauvegarde {
+  +sauvegarder(Jeu, Path)$
+  +charger(Path)$ Jeu
+}
+class Jeu {
+  -joueurCourant : int
+  -etat : Etat
+  -vainqueur : Joueur
+  +lancerDe() int
+  +getChevauxDeplacables() List~Cheval~
+  +jouerCheval(Cheval) boolean
+  +jouerTourBot() int
+  +choisirPremierJoueur() Joueur
+  +getHistorique() List~Lancer~
+}
+class Etat {
+  <<enumeration>>
+  ATTENTE_LANCER
+  ATTENTE_CHOIX
+  TERMINEE
+}
+class Lancer {
+  <<record>>
+  joueur : Joueur
+  valeur : int
+}
+class Plateau {
+  +estDeplacementValide(Joueur, Cheval, int, List) boolean
+  +destination(Cheval, int) int
+  +capturerait(Joueur, Cheval, int, List) boolean
+  +gererCapture(Joueur, Cheval, List)
+  +decalageDepart(Couleur)$ int
+}
+class De {
+  -valeur : int
+  +lancer() int
+  +getValeur() int
+}
 class Joueur {
-  -String nom
-  -Couleur couleur
-  -List~Cheval~ chevaux
-  +sortirCheval()
-  +deplacerCheval(Cheval, int)
+  -nom : String
+  -bot : boolean
   +aGagne() boolean
 }
-
 class Cheval {
-  -int position
-  -boolean sorti
-  -boolean termine
+  -numero : int
+  -position : int
+  +isSorti() boolean
+  +isTermine() boolean
   +sortir()
-  +deplacer(int)
   +rentrerEcurie()
-  +estArrive() boolean
 }
-
-class Plateau {
-  -List~Case~ cases
-  +getCase(int) Case
-  +estDeplacementValide(Cheval, int) boolean
-  +gererCapture(Cheval)
-}
-
-class Case {
-  -int numero
-  -TypeCase type
-  +estSecurisee() boolean
-}
-
-class De {
-  -int valeur
-  +lancer() int
-}
-
-class PartieController {
-  -Jeu jeu
-  +initialiser()
-  +onLancerDe()
-  +onChoisirCheval()
-  +actualiserVue()
-}
-
-class PlateauView {
-  -GridPane grille
-  +dessinerPlateau()
-  +afficherChevaux()
-  +mettreAJourPlateau()
-}
-
 class Couleur {
   <<enumeration>>
+  JAUNE
   ROUGE
   BLEU
-  JAUNE
   VERT
 }
-
-class TypeCase {
-  <<enumeration>>
-  NORMALE
-  DEPART
-  SECURISEE
-  ARRIVEE
+class PlateauView {
+  +afficherPossibilites(List, int)
+  +dessinerPlateau()
+}
+class Quartier
+class EcurieView
+class ChevalView
+class DeView
+class Rendu {
+  <<utility>>
+  +couleur(Couleur)$ Color
 }
 
-Jeu "1" *-- "2..4" Joueur : contient
-Jeu "1" *-- "1" Plateau : utilise
-Jeu "1" *-- "1" De : utilise
-Joueur "1" *-- "4" Cheval : possede
-Plateau "1" *-- "1..*" Case : contient
-Joueur --> Couleur : possede
-Case --> TypeCase : type
-PartieController --> Jeu : controle
-PartieController --> PlateauView : actualise
-PlateauView --> Plateau : affiche
+PetitsChevauxApp ..> Menu : affiche
+PetitsChevauxApp ..> PartieController : affiche
+Menu ..> Jeu : crée
+Menu ..> Sauvegarde : charge
+PartieController --> Jeu
+PartieController --> PlateauView
+PartieController --> DeView
+PartieController ..> Sauvegarde : sauvegarde
+Jeu *-- Plateau
+Jeu *-- De
+Jeu o-- "4" Joueur
+Jeu --> Etat
+Jeu *-- Lancer
+Joueur *-- "4" Cheval
+Joueur --> Couleur
+PlateauView *-- "4" Quartier
+PlateauView *-- "4" EcurieView
+PlateauView *-- ChevalView
+PlateauView ..> Plateau
+PlateauView ..> Rendu

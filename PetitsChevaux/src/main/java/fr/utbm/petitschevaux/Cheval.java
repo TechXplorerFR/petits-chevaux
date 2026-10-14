@@ -1,74 +1,70 @@
 package fr.utbm.petitschevaux;
 
+/**
+ * Un cheval, entièrement décrit par sa position relative à son joueur
+ * (voir {@link Plateau} pour la numérotation).
+ */
 public class Cheval {
     public static final int ECURIE = 0;
-    private int numero;
-    private int position;
-    private boolean sorti, termine;
+    public static final int CENTRE = Plateau.POSITION_ARRIVEE + 1;
+
+    private final int numero;
+    private int position = ECURIE;
 
     public Cheval(int numero) {
-        setNumero(numero);
-        setSorti(false);
-        setTermine(false);
-        setPosition(0);
-    }
-
-    public void setPosition(int value) {
-        this.position = value;
-    }
-
-    public int getPosition() {
-        return position;
+        this.numero = numero;
     }
 
     public int getNumero() {
         return numero;
     }
 
-    public void setNumero(int numero) {
-        this.numero = numero;
+    public int getPosition() {
+        return position;
     }
 
-    public boolean isTermine() {
-        return termine;
+    /**
+     * Place le cheval sur une position donnée (déplacement ou chargement d'une sauvegarde).
+     *
+     * @param position position entre {@link #ECURIE} et {@link #CENTRE}
+     */
+    public void setPosition(int position) {
+        if (position < ECURIE || position > CENTRE) {
+            throw new IllegalArgumentException("Position de cheval invalide : " + position);
+        }
+        this.position = position;
     }
 
-    public void setTermine(boolean termine) {
-        this.termine = termine;
-    }
-
+    /**
+     * @return vrai si le cheval a quitté l'écurie (il peut être sur la piste, l'escalier ou arrivé)
+     */
     public boolean isSorti() {
-        return sorti;
+        return position != ECURIE;
     }
 
-    public void setSorti(boolean sorti) {
-        this.sorti = sorti;
+    /**
+     * @return vrai si le cheval est arrivé au centre
+     */
+    public boolean isTermine() {
+        return position == CENTRE;
+    }
+
+    /**
+     * @return vrai si le cheval est sur la piste ou dans l'escalier
+     */
+    public boolean estEnJeu() {
+        return isSorti() && !isTermine();
     }
 
     public void sortir() {
-        setSorti(true);
         setPosition(1);
     }
 
-    public void deplacer(int cases) {
-        if (!sorti || termine || cases < 0) {
-            return;
-        }
-        setPosition(getPosition() + cases);
-    }
-
     public void rentrerEcurie() {
-        setSorti(false);
-        setTermine(false);
-        setPosition(0);
-    }
-
-    public boolean estArrive() {
-        return this.isTermine();
+        setPosition(ECURIE);
     }
 
     public void terminer() {
-        setTermine(true);
-        setSorti(true);
+        setPosition(CENTRE);
     }
 }

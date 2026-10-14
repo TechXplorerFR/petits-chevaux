@@ -23,9 +23,11 @@
     </Label>
 
     <HBox alignment="CENTER" spacing="10.0">
-        <Label text="Nombre de joueurs :"/>
+        <Label text="Joueurs humains :"/>
         <Spinner fx:id="nombreJoueurs" prefWidth="80.0"/>
     </HBox>
+
+    <Label text="Les couleurs restantes sont jouées par des bots." style="-fx-text-fill: #6b665e;"/>
 
     <VBox fx:id="champsJoueurs" alignment="CENTER" spacing="8.0" maxWidth="260.0"/>
 
