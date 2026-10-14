@@ -11,6 +11,7 @@ public class Joueur {
     private final Couleur couleur;
     private final boolean bot;
     private final List<Cheval> chevaux;
+    private final Statistiques statistiques = new Statistiques();
 
     public Joueur(String nom, Couleur couleur) {
         this(nom, couleur, false);
@@ -59,6 +60,20 @@ public class Joueur {
      */
     public List<Cheval> getChevaux() {
         return chevaux;
+    }
+
+    /**
+     * @return les statistiques du joueur pour la partie en cours
+     */
+    public Statistiques getStatistiques() {
+        return statistiques;
+    }
+
+    /**
+     * @return le nombre de chevaux arrivés au centre
+     */
+    public int getChevauxArrives() {
+        return (int) chevaux.stream().filter(Cheval::isTermine).count();
     }
 
     public boolean aGagne() {

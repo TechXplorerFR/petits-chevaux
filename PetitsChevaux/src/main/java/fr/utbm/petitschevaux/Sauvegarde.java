@@ -7,8 +7,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 /**
  * Sauvegarde et chargement d'une partie dans un fichier texte (format Properties).
@@ -26,12 +28,15 @@ public final class Sauvegarde {
         donnees.setProperty("joueurCourant", String.valueOf(jeu.getJoueurCourant()));
         donnees.setProperty("de", String.valueOf(jeu.getDe().getValeur()));
         donnees.setProperty("attenteChoix", String.valueOf(jeu.isAttenteChoix()));
+        donnees.setProperty("duree", String.valueOf(jeu.getDuree().toMillis()));
         for (int i = 0; i < joueurs.size(); i++) {
             Joueur joueur = joueurs.get(i);
             String prefixe = "joueur." + i + ".";
             donnees.setProperty(prefixe + "nom", joueur.getNom());
             donnees.setProperty(prefixe + "couleur", joueur.getCouleur().name());
             donnees.setProperty(prefixe + "bot", String.valueOf(joueur.isBot()));
+            donnees.setProperty(prefixe + "stats", Arrays.stream(joueur.getStatistiques().versTableau())
+                    .mapToObj(String::valueOf).collect(Collectors.joining(";")));
             List<Cheval> chevaux = joueur.getChevaux();
             for (int j = 0; j < chevaux.size(); j++) {
                 donnees.setProperty(prefixe + "cheval." + j,
@@ -60,6 +65,11 @@ public final class Sauvegarde {
                     cheval.setPosition(lirePosition(lire(donnees,
                             prefixe + "cheval." + cheval.getNumero())));
                 }
+                String stats = donnees.getProperty(prefixe + "stats");
+                if (stats != null) {
+                    joueur.getStatistiques().restaurer(Arrays.stream(stats.split(";"))
+                            .mapToInt(valeur -> Integer.parseInt(valeur.trim())).toArray());
+                }
                 joueurs.add(joueur);
             }
             Jeu jeu = new Jeu(joueurs);
@@ -70,6 +80,7 @@ public final class Sauvegarde {
             jeu.restaurerTour(couleurCourante.ordinal(),
                     Integer.parseInt(donnees.getProperty("de", "0")),
                     Boolean.parseBoolean(donnees.getProperty("attenteChoix", "false")));
+            jeu.restaurerDuree(Long.parseLong(donnees.getProperty("duree", "0")));
             return jeu;
         } catch (IllegalArgumentException | IndexOutOfBoundsException e) {
             throw new IOException("Fichier de sauvegarde invalide : " + e.getMessage(), e);

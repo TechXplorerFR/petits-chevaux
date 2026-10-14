@@ -9,6 +9,10 @@ import javafx.stage.Stage;
 
 import java.io.IOException;
 
+/**
+ * Point d'entrée JavaFX et navigation entre les écrans :
+ * menu → tirage du premier joueur → partie → victoire.
+ */
 public class PetitsChevauxApp extends Application {
     private static final double LARGEUR = 860;
     private static final double HAUTEUR = 680;
@@ -21,15 +25,33 @@ public class PetitsChevauxApp extends Application {
     }
 
     public static void afficherMenu(Stage stage) throws IOException {
-        FXMLLoader fxmlLoader = new FXMLLoader(PetitsChevauxApp.class.getResource("menu-view.fxml"));
-        afficher(stage, fxmlLoader.load());
+        afficher(stage, charger("menu-view.fxml").load());
+    }
+
+    /**
+     * Affiche le tirage au dé qui désigne le premier joueur d'une nouvelle partie.
+     */
+    public static void afficherTirage(Stage stage, Jeu jeu) throws IOException {
+        FXMLLoader loader = charger("tirage-view.fxml");
+        Parent racine = loader.load();
+        loader.<TirageController>getController().setJeu(jeu);
+        afficher(stage, racine);
     }
 
     public static void afficherPartie(Stage stage, Jeu jeu) throws IOException {
-        FXMLLoader fxmlLoader = new FXMLLoader(PetitsChevauxApp.class.getResource("partie-view.fxml"));
-        Parent racine = fxmlLoader.load();
-        PartieController controller = fxmlLoader.getController();
-        controller.setJeu(jeu);
+        FXMLLoader loader = charger("partie-view.fxml");
+        Parent racine = loader.load();
+        loader.<PartieController>getController().setJeu(jeu);
+        afficher(stage, racine);
+    }
+
+    /**
+     * Affiche l'écran de fin de partie avec le classement et les statistiques.
+     */
+    public static void afficherVictoire(Stage stage, Jeu jeu) throws IOException {
+        FXMLLoader loader = charger("victoire-view.fxml");
+        Parent racine = loader.load();
+        loader.<VictoireController>getController().setJeu(jeu);
         afficher(stage, racine);
     }
 
@@ -41,6 +63,10 @@ public class PetitsChevauxApp extends Application {
      */
     public static void afficherErreur(String message, Exception cause) {
         new Alert(Alert.AlertType.ERROR, message + " :\n" + cause.getMessage()).showAndWait();
+    }
+
+    private static FXMLLoader charger(String vue) {
+        return new FXMLLoader(PetitsChevauxApp.class.getResource(vue));
     }
 
     private static void afficher(Stage stage, Parent racine) {

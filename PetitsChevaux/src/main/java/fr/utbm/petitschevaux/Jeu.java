@@ -1,5 +1,6 @@
 package fr.utbm.petitschevaux;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -37,6 +38,10 @@ public class Jeu {
     private int joueurCourant;
     private Etat etat = Etat.ATTENTE_LANCER;
     private Joueur vainqueur;
+    /** Chronomètre : temps des sessions précédentes (sauvegarde) + session en cours. */
+    private long dureeAvantChargement;
+    private long debutChrono = System.currentTimeMillis();
+    private Long finChrono;
 
     /**
      * Crée une partie. Les couleurs absentes sont complétées par des bots,
@@ -158,7 +163,9 @@ public class Jeu {
         }
         int valeur = de.lancer();
         ajouterHistorique(new Lancer(getJoueurActif(), valeur));
+        getJoueurActif().getStatistiques().enregistrerLancer(valeur);
         if (calculerChevauxDeplacables().isEmpty()) {
+            getJoueurActif().getStatistiques().enregistrerTourPasse();
             finirTour(valeur);
         } else {
             etat = Etat.ATTENTE_CHOIX;
@@ -194,8 +201,19 @@ public class Jeu {
             return false;
         }
         Joueur joueur = getJoueurActif();
+        Statistiques statistiques = joueur.getStatistiques();
+        if (!cheval.isSorti()) {
+            statistiques.enregistrerSortie();
+        } else {
+            // Dans l'escalier et vers le centre, le cheval n'avance que d'une case.
+            boolean surLaPiste = cheval.getPosition() < Plateau.POSITION_BAS_ESCALIER;
+            statistiques.enregistrerDeplacement(surLaPiste ? de.getValeur() : 1);
+        }
         cheval.setPosition(plateau.destination(cheval, de.getValeur()));
-        plateau.gererCapture(joueur, cheval, joueurs);
+        for (Joueur victime : plateau.gererCapture(joueur, cheval, joueurs)) {
+            statistiques.enregistrerCapture();
+            victime.getStatistiques().enregistrerChevalPerdu();
+        }
         if (!verifierVictoire()) {
             finirTour(de.getValeur());
         }
@@ -231,32 +249,61 @@ public class Jeu {
     }
 
     /**
-     * Désigne le premier joueur : chacun lance le dé, le plus fort commence ;
-     * en cas d'égalité, seuls les ex æquo relancent. Les lancers vont dans l'historique.
+     * Désigne le joueur qui commence (résultat de {@link TiragePremierJoueur})
+     * et lance le chronomètre de la partie.
      *
-     * @return le joueur qui commence
+     * @param premier joueur qui joue en premier
+     * @throws IllegalStateException si la partie a déjà commencé
      */
-    public Joueur choisirPremierJoueur() {
-        List<Joueur> candidats = new ArrayList<>(joueurs);
-        while (candidats.size() > 1) {
-            List<Joueur> meilleurs = new ArrayList<>();
-            int meilleur = 0;
-            for (Joueur joueur : candidats) {
-                int valeur = de.lancer();
-                ajouterHistorique(new Lancer(joueur, valeur));
-                if (valeur > meilleur) {
-                    meilleur = valeur;
-                    meilleurs.clear();
-                }
-                if (valeur == meilleur) {
-                    meilleurs.add(joueur);
-                }
-            }
-            candidats = meilleurs;
+    public void definirPremierJoueur(Joueur premier) {
+        if (!historique.isEmpty() || estTerminee()) {
+            throw new IllegalStateException("La partie a déjà commencé.");
         }
-        joueurCourant = joueurs.indexOf(candidats.get(0));
-        de.restaurer(0);
-        return candidats.get(0);
+        setJoueurCourant(joueurs.indexOf(premier));
+        debutChrono = System.currentTimeMillis();
+    }
+
+    /**
+     * @return temps de jeu (arrêté à la fin de la partie)
+     */
+    public Duration getDuree() {
+        long fin = finChrono != null ? finChrono : System.currentTimeMillis();
+        return Duration.ofMillis(dureeAvantChargement + fin - debutChrono);
+    }
+
+    /**
+     * @return nombre total de lancers de dé de la partie
+     */
+    public int getNombreLancers() {
+        return joueurs.stream().mapToInt(joueur -> joueur.getStatistiques().getLancers()).sum();
+    }
+
+    /**
+     * Classement : le vainqueur, puis par chevaux arrivés et enfin par avancée sur le plateau.
+     *
+     * @return les joueurs du premier au dernier
+     */
+    public List<Joueur> getClassement() {
+        return joueurs.stream()
+                .sorted(Comparator.comparing((Joueur joueur) -> joueur != vainqueur)
+                        .thenComparing(Comparator.comparingInt(Joueur::getChevauxArrives).reversed())
+                        .thenComparing(Comparator.comparingInt(Jeu::avancee).reversed()))
+                .toList();
+    }
+
+    private static int avancee(Joueur joueur) {
+        return joueur.getChevaux().stream().mapToInt(Cheval::getPosition).sum();
+    }
+
+    /**
+     * Restaure le temps déjà joué, lu dans une sauvegarde.
+     */
+    void restaurerDuree(long millisecondes) {
+        dureeAvantChargement = millisecondes;
+        debutChrono = System.currentTimeMillis();
+        if (estTerminee()) {
+            finChrono = debutChrono;
+        }
     }
 
     /**
@@ -294,6 +341,7 @@ public class Jeu {
             if (joueur.aGagne()) {
                 vainqueur = joueur;
                 etat = Etat.TERMINEE;
+                finChrono = System.currentTimeMillis();
                 return true;
             }
         }

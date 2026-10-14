@@ -125,11 +125,13 @@ public class Plateau {
      * @param joueur propriétaire du cheval
      * @param cheval cheval qui vient d'arriver
      * @param joueurs joueurs de la partie
+     * @return le propriétaire de chaque cheval renvoyé à l'écurie (vide si aucune capture)
      */
-    public void gererCapture(Joueur joueur, Cheval cheval, List<Joueur> joueurs) {
+    public List<Joueur> gererCapture(Joueur joueur, Cheval cheval, List<Joueur> joueurs) {
+        List<Joueur> victimes = new ArrayList<>();
         int position = positionAbsolue(joueur, cheval);
         if (position < 0) {
-            return;
+            return victimes;
         }
         for (Joueur autreJoueur : joueurs) {
             if (autreJoueur == joueur) {
@@ -138,9 +140,11 @@ public class Plateau {
             for (Cheval autre : autreJoueur.getChevaux()) {
                 if (positionAbsolue(autreJoueur, autre) == position) {
                     autre.rentrerEcurie();
+                    victimes.add(autreJoueur);
                 }
             }
         }
+        return victimes;
     }
 
     /**

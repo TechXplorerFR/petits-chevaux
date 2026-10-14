@@ -2,7 +2,6 @@ package fr.utbm.petitschevaux;
 
 import javafx.animation.PauseTransition;
 import javafx.fxml.FXML;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.Pane;
@@ -21,6 +20,7 @@ import java.io.IOException;
  */
 public class PartieController {
     private static final Duration DELAI_BOT = Duration.millis(700);
+    private static final Duration DELAI_VICTOIRE = Duration.millis(1500);
 
     @FXML private Pane zonePlateau;
     @FXML private Label information;
@@ -35,6 +35,8 @@ public class PartieController {
     private DeView deView;
     /** Pause avant le prochain coup d'un bot, ou {@code null} si aucun bot n'attend. */
     private PauseTransition pauseBot;
+    /** Pause avant l'écran de victoire, une fois la partie terminée. */
+    private PauseTransition pauseVictoire;
 
     /**
      * Branche une partie (nouvelle ou chargée) sur la vue.
@@ -108,10 +110,13 @@ public class PartieController {
 
     @FXML
     private void onRetourMenu() {
-        if (pauseBot != null) {
-            pauseBot.stop();
-            pauseBot = null;
+        for (PauseTransition pause : new PauseTransition[] { pauseBot, pauseVictoire }) {
+            if (pause != null) {
+                pause.stop();
+            }
         }
+        pauseBot = null;
+        pauseVictoire = null;
         try {
             PetitsChevauxApp.afficherMenu(getStage());
         } catch (IOException e) {
@@ -137,15 +142,26 @@ public class PartieController {
         deView.afficher(valeurDe);
         afficherHistorique();
         if (jeu.estTerminee()) {
-            annoncerVainqueur();
+            afficherVictoireBientot();
         }
     }
 
-    private void annoncerVainqueur() {
-        Alert alerte = new Alert(Alert.AlertType.INFORMATION,
-                jeu.getVainqueur().getNom() + " a ramené ses quatre chevaux !");
-        alerte.setHeaderText("Fin de la partie");
-        alerte.show();
+    /**
+     * Laisse voir le dernier coup un instant, puis passe à l'écran de victoire.
+     */
+    private void afficherVictoireBientot() {
+        if (pauseVictoire != null) {
+            return;
+        }
+        pauseVictoire = new PauseTransition(DELAI_VICTOIRE);
+        pauseVictoire.setOnFinished(event -> {
+            try {
+                PetitsChevauxApp.afficherVictoire(getStage(), jeu);
+            } catch (IOException e) {
+                PetitsChevauxApp.afficherErreur("Impossible d'afficher la victoire", e);
+            }
+        });
+        pauseVictoire.play();
     }
 
     private void afficherHistorique() {

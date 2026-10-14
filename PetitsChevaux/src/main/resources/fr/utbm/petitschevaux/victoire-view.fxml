@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.FlowPane?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<VBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="fr.utbm.petitschevaux.VictoireController"
+      alignment="TOP_CENTER" spacing="18.0" style="-fx-background-color: #f4f0e7;">
+    <padding>
+        <Insets bottom="24.0" left="24.0" right="24.0" top="24.0"/>
+    </padding>
+
+    <Label fx:id="titre">
+        <font>
+            <Font name="System Bold" size="34.0"/>
+        </font>
+    </Label>
+    <Label fx:id="sousTitre" style="-fx-text-fill: #6b665e; -fx-font-size: 15px;"/>
+
+    <HBox fx:id="resume" alignment="CENTER" spacing="14.0"/>
+
+    <GridPane fx:id="tableau" alignment="CENTER" hgap="0" vgap="0"
+              style="-fx-background-color: white; -fx-background-radius: 8;"/>
+
+    <FlowPane fx:id="distinctions" alignment="CENTER" hgap="12.0" vgap="10.0"/>
+
+    <HBox alignment="CENTER" spacing="16.0">
+        <Button text="Menu principal" onAction="#onRetourMenu" prefWidth="160.0"/>
+        <Button text="Rejouer" onAction="#onRejouer" prefWidth="160.0" defaultButton="true"/>
+    </HBox>
+</VBox>

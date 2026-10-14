@@ -33,6 +33,16 @@ final class Rendu {
     }
 
     /**
+     * @param couleur couleur d'un joueur
+     * @return la teinte au format CSS (#rrggbb), pour les styles JavaFX
+     */
+    static String css(Couleur couleur) {
+        Color teinte = couleur(couleur);
+        return String.format("#%02x%02x%02x", Math.round(teinte.getRed() * 255),
+                Math.round(teinte.getGreen() * 255), Math.round(teinte.getBlue() * 255));
+    }
+
+    /**
      * Crée une case carrée centrée sur (x, y).
      */
     static Rectangle creerCase(double x, double y, Color remplissage) {

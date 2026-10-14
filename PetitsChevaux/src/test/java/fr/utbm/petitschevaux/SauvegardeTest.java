@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -42,6 +43,13 @@ class SauvegardeTest {
                         obtenu.getChevaux().get(c).getPosition());
             }
         }
+        for (int i = 0; i < 4; i++) {
+            assertArrayEquals(jeu.getJoueurs().get(i).getStatistiques().versTableau(),
+                    charge.getJoueurs().get(i).getStatistiques().versTableau());
+        }
+        assertEquals(1, charge.getJoueurs().get(2).getStatistiques().getSix());
+        assertTrue(charge.getDuree().compareTo(jeu.getDuree().minusSeconds(1)) >= 0,
+                "le temps de jeu est conservé");
         assertEquals(2, charge.getJoueurCourant());
         assertTrue(charge.isAttenteChoix(), "le lancer en attente est conservé");
         assertEquals(6, charge.getDe().getValeur());

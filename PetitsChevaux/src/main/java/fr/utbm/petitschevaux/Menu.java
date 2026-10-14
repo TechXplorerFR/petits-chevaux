@@ -71,9 +71,11 @@ public class Menu {
             String nom = nomsJoueurs.get(i).getText().trim();
             joueurs.add(new Joueur(nom.isEmpty() ? "Joueur " + (i + 1) : nom, couleurs[i]));
         }
-        Jeu jeu = new Jeu(joueurs);
-        jeu.choisirPremierJoueur();
-        afficherPartie(jeu);
+        try {
+            PetitsChevauxApp.afficherTirage(getStage(), new Jeu(joueurs));
+        } catch (IOException e) {
+            PetitsChevauxApp.afficherErreur("Impossible d'ouvrir le tirage", e);
+        }
     }
 
     @FXML
@@ -87,7 +89,7 @@ public class Menu {
             return;
         }
         try {
-            afficherPartie(Sauvegarde.charger(fichier.toPath()));
+            PetitsChevauxApp.afficherPartie(getStage(), Sauvegarde.charger(fichier.toPath()));
         } catch (IOException e) {
             PetitsChevauxApp.afficherErreur("Impossible de charger la partie", e);
         }
@@ -96,14 +98,6 @@ public class Menu {
     @FXML
     private void onQuitter() {
         Platform.exit();
-    }
-
-    private void afficherPartie(Jeu jeu) {
-        try {
-            PetitsChevauxApp.afficherPartie(getStage(), jeu);
-        } catch (IOException e) {
-            PetitsChevauxApp.afficherErreur("Impossible d'ouvrir la partie", e);
-        }
     }
 
     private Stage getStage() {

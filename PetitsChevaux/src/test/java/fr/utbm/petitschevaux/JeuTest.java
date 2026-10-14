@@ -126,13 +126,69 @@ class JeuTest {
     }
 
     @Test
-    void lePremierJoueurEstLePlusFortAuDeAvecRelanceDesExAequo() {
-        Jeu jeu = new Jeu(List.of(new Joueur("Alice", Couleur.JAUNE)), new DeTruque(3, 5, 5, 2, 4, 6));
-        Joueur premier = jeu.choisirPremierJoueur();
-        assertSame(jeu.getJoueurs().get(2), premier);
-        assertEquals(2, jeu.getJoueurCourant());
-        assertEquals(6, jeu.getHistorique().get(0).valeur());
-        assertTrue(jeu.peutLancer());
+    void lePremierJoueurChoisiCommenceSansLancerDansLHistorique() {
+        Jeu jeu = jeu(4);
+        Joueur bleu = jeu.getJoueurs().get(2);
+        jeu.definirPremierJoueur(bleu);
+
+        assertSame(bleu, jeu.getJoueurActif());
+        assertTrue(jeu.getHistorique().isEmpty());
+        assertEquals(0, jeu.getDe().getValeur());
+    }
+
+    @Test
+    void onNePeutPlusChoisirLePremierJoueurUneFoisLaPartieCommencee() {
+        Jeu jeu = jeu(4);
+        jeu.lancerDe();
+        assertThrows(IllegalStateException.class,
+                () -> jeu.definirPremierJoueur(jeu.getJoueurs().get(2)));
+    }
+
+    @Test
+    void lesStatistiquesSuiventLesLancersDeplacementsEtCaptures() {
+        Jeu jeu = jeu(6, 6, 3, 2);
+        Joueur alice = jeu.getJoueurs().get(0);
+        Joueur bob = jeu.getJoueurs().get(1);
+        Cheval chasseur = alice.getChevaux().get(0);
+        Cheval victime = bob.getChevaux().get(0);
+        victime.setPosition(1); // case absolue 22, soit la position 15 pour Alice
+
+        jeu.lancerDe();               // 6 : sortie
+        jeu.jouerCheval(chasseur);
+        jeu.lancerDe();               // 6 : 1 -> 7
+        jeu.jouerCheval(chasseur);
+        chasseur.setPosition(12);
+        jeu.lancerDe();               // 3 : 12 -> 15, capture
+        jeu.jouerCheval(chasseur);
+        jeu.lancerDe();               // 2 pour Bob, aucun cheval jouable
+
+        Statistiques stats = alice.getStatistiques();
+        assertEquals(3, stats.getLancers());
+        assertEquals(2, stats.getSix());
+        assertEquals(5.0, stats.getMoyenneDe());
+        assertEquals(1, stats.getSorties());
+        assertEquals(9, stats.getCasesParcourues());
+        assertEquals(1, stats.getCaptures());
+        assertEquals(1, bob.getStatistiques().getChevauxPerdus());
+        assertEquals(1, bob.getStatistiques().getToursPasses());
+        assertEquals(4, jeu.getNombreLancers());
+    }
+
+    @Test
+    void leClassementCommenceParLeVainqueurPuisLesChevauxArrives() {
+        Jeu jeu = jeu(6);
+        Joueur alice = jeu.getJoueurs().get(0);
+        Joueur bleu = jeu.getJoueurs().get(2);
+        bleu.getChevaux().get(0).terminer();
+        bleu.getChevaux().get(1).terminer();
+        alice.getChevaux().forEach(Cheval::terminer);
+        alice.getChevaux().get(3).setPosition(Plateau.POSITION_ARRIVEE);
+        jeu.lancerDe();
+        jeu.jouerCheval(alice.getChevaux().get(3));
+
+        List<Joueur> classement = jeu.getClassement();
+        assertSame(alice, classement.get(0));
+        assertSame(bleu, classement.get(1));
     }
 
     @Test
