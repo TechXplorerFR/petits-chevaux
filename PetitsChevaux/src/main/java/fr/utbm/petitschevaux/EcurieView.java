@@ -78,8 +78,14 @@ public class EcurieView {
      */
     public void orienterNom(double rotation, boolean dessous) {
         nomJoueur.applyCss();
-        nomJoueur.setX(MAISON_X + MAISON_TAILLE / 2 - nomJoueur.getLayoutBounds().getWidth() / 2);
-        nomJoueur.setY(dessous ? MAISON_Y + MAISON_TAILLE + 25 : MAISON_Y - 15);
+        double centreX = MAISON_X + MAISON_TAILLE / 2;
+        double centreY = MAISON_Y + MAISON_TAILLE / 2;
+        double distanceVerticale = dessous ? MAISON_TAILLE / 2 + 25 : -(MAISON_TAILLE / 2 + 15);
+        double angle = Math.toRadians(rotation);
+        double decalageX = Math.sin(angle) * distanceVerticale;
+        double decalageY = Math.cos(angle) * distanceVerticale;
+        nomJoueur.setX(centreX + decalageX - nomJoueur.getLayoutBounds().getWidth() / 2);
+        nomJoueur.setY(centreY + decalageY);
         nomJoueur.setRotate(-rotation);
     }
 

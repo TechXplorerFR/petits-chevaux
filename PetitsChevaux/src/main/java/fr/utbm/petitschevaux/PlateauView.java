@@ -94,7 +94,8 @@ public class PlateauView {
             escalier.getTransforms().setAll(new Rotate(rotation, Rendu.CENTRE, Rendu.CENTRE));
             EcurieView ecurie = ecuries.get(couleur);
             ecurie.getDessin().getTransforms().setAll(new Rotate(rotation, Rendu.CENTRE, Rendu.CENTRE));
-            ecurie.orienterNom(rotation, couleur != Couleur.BLEU);
+            boolean nomDessous = rotation == 0 || rotation == 270;
+            ecurie.orienterNom(rotation, nomDessous);
             ecurie.actualiser(chevauxDeplacables);
             racine.getChildren().addAll(escalier, ecurie.getDessin());
         }
