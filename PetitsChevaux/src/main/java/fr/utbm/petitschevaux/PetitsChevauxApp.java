@@ -14,7 +14,7 @@ import java.io.IOException;
  * menu → tirage du premier joueur → partie → victoire.
  */
 public class PetitsChevauxApp extends Application {
-    private static final double LARGEUR = 860;
+    private static final double LARGEUR = 1100;
     private static final double HAUTEUR = 680;
 
     @Override

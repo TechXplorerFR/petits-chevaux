@@ -2,9 +2,12 @@ package fr.utbm.petitschevaux;
 
 import javafx.animation.PauseTransition;
 import javafx.fxml.FXML;
+import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
@@ -29,6 +32,9 @@ public class PartieController {
     @FXML private VBox historiqueLancers;
     @FXML private VBox joueursAffiches;
     @FXML private StackPane vueDe;
+    @FXML private VBox panneauSpecial;
+    @FXML private VBox legende;
+    @FXML private VBox journal;
 
     private Jeu jeu;
     private PlateauView plateauView;
@@ -49,6 +55,12 @@ public class PartieController {
         deView = new DeView();
         vueDe.getChildren().setAll(deView.getRoot());
         afficherJoueurs();
+        boolean casesSpeciales = jeu.getMode() == ModeJeu.CASES_SPECIALES;
+        panneauSpecial.setVisible(casesSpeciales);
+        panneauSpecial.setManaged(casesSpeciales);
+        if (casesSpeciales) {
+            afficherLegende();
+        }
         actualiserVue();
         jouerLesBots();
     }
@@ -141,6 +153,9 @@ public class PartieController {
         resultatDe.setText("Résultat du dé : " + (valeurDe == 0 ? "-" : valeurDe));
         deView.afficher(valeurDe);
         afficherHistorique();
+        if (jeu.getMode() == ModeJeu.CASES_SPECIALES) {
+            afficherJournal();
+        }
         if (jeu.estTerminee()) {
             afficherVictoireBientot();
         }
@@ -171,6 +186,63 @@ public class PartieController {
             Label ligne = new Label("• " + lancer.joueur().getNom() + " : " + lancer.valeur());
             ligne.setTextFill(Rendu.couleur(lancer.joueur().getCouleur()));
             historiqueLancers.getChildren().add(ligne);
+        }
+    }
+
+    /**
+     * Une ligne par effet : la case telle qu'elle apparaît sur le plateau, son nom et son effet.
+     */
+    private void afficherLegende() {
+        legende.getChildren().clear();
+        for (CaseSpeciale effet : CaseSpeciale.values()) {
+            double demiCase = Rendu.TAILLE_CASE / 2;
+            Pane apercu = new Pane(Rendu.creerCaseSpeciale(demiCase, demiCase, effet));
+            apercu.setMinSize(Rendu.TAILLE_CASE, Rendu.TAILLE_CASE);
+            Label nom = new Label(effet.getNom());
+            nom.setStyle("-fx-font-weight: bold;");
+            Label description = new Label(effet.getDescription());
+            description.setWrapText(true);
+            description.setStyle("-fx-font-size: 11px; -fx-text-fill: #6b665e;");
+            VBox texte = new VBox(1, nom, description);
+            HBox.setHgrow(texte, Priority.ALWAYS);
+            HBox ligne = new HBox(8, apercu, texte);
+            ligne.setAlignment(Pos.CENTER_LEFT);
+            legende.getChildren().add(ligne);
+        }
+    }
+
+    /**
+     * Derniers effets déclenchés, puis les effets encore en attente (gel, dé maudit).
+     */
+    private void afficherJournal() {
+        journal.getChildren().clear();
+        for (Jeu.Evenement evenement : jeu.getJournal()) {
+            Label ligne = new Label(evenement.message());
+            ligne.setWrapText(true);
+            ligne.setTextFill(Rendu.couleur(evenement.joueur().getCouleur()).darker());
+            ligne.setStyle("-fx-font-size: 11px;");
+            journal.getChildren().add(ligne);
+        }
+        if (jeu.getJournal().isEmpty()) {
+            Label vide = new Label("Aucun effet pour l'instant.");
+            vide.setStyle("-fx-font-size: 11px; -fx-text-fill: #6b665e;");
+            journal.getChildren().add(vide);
+        }
+        for (Joueur joueur : jeu.getJoueurs()) {
+            StringBuilder attente = new StringBuilder();
+            if (jeu.getToursGeles(joueur) > 0) {
+                attente.append("passe son prochain tour (gel) ");
+            }
+            if (jeu.getMalusDe(joueur) > 0) {
+                attente.append("dé maudit (-").append(jeu.getMalusDe(joueur)).append(")");
+            }
+            if (!attente.isEmpty()) {
+                Label ligne = new Label(joueur.getNom() + " : " + attente.toString().trim());
+                ligne.setWrapText(true);
+                ligne.setStyle("-fx-font-size: 11px; -fx-font-weight: bold;");
+                ligne.setTextFill(Rendu.couleur(joueur.getCouleur()).darker());
+                journal.getChildren().add(ligne);
+            }
         }
     }
 

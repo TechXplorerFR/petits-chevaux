@@ -3,6 +3,7 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.RadioButton?>
 <?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.Spinner?>
 <?import javafx.scene.layout.HBox?>
@@ -30,6 +31,16 @@
     <Label text="Les couleurs restantes sont jouées par des bots." style="-fx-text-fill: #6b665e;"/>
 
     <VBox fx:id="champsJoueurs" alignment="CENTER" spacing="8.0" maxWidth="260.0"/>
+
+    <Separator maxWidth="260.0"/>
+
+    <HBox alignment="CENTER" spacing="16.0">
+        <Label text="Mode de jeu :"/>
+        <RadioButton fx:id="modeClassique" text="Classique" selected="true"/>
+        <RadioButton fx:id="modeCasesSpeciales" text="Cases spéciales"/>
+    </HBox>
+    <Label fx:id="descriptionMode" wrapText="true" maxWidth="440.0" textAlignment="CENTER"
+           style="-fx-text-fill: #6b665e;"/>
 
     <Separator maxWidth="260.0"/>
 

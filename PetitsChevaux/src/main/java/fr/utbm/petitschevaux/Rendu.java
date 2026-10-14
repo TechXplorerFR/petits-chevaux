@@ -1,7 +1,12 @@
 package fr.utbm.petitschevaux;
 
+import javafx.scene.Group;
+import javafx.scene.control.Tooltip;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+import javafx.scene.text.Text;
 
 /**
  * Constantes et utilitaires graphiques partagés par les vues du plateau.
@@ -40,6 +45,34 @@ final class Rendu {
         Color teinte = couleur(couleur);
         return String.format("#%02x%02x%02x", Math.round(teinte.getRed() * 255),
                 Math.round(teinte.getGreen() * 255), Math.round(teinte.getBlue() * 255));
+    }
+
+    /**
+     * @return la couleur de fond d'une case spéciale selon sa catégorie
+     *         (teintes pâles pour ne pas se confondre avec les couleurs des joueurs)
+     */
+    static Color couleur(CaseSpeciale.Categorie categorie) {
+        return switch (categorie) {
+            case BONUS -> Color.web("#bfe6c8");
+            case MALUS -> Color.web("#f4c2c2");
+            case NEUTRE -> Color.web("#d9cff3");
+        };
+    }
+
+    /**
+     * Crée une case spéciale centrée sur (x, y) : fond selon la catégorie, symbole de l'effet
+     * et infobulle avec sa description.
+     */
+    static Group creerCaseSpeciale(double x, double y, CaseSpeciale effet) {
+        Rectangle tuile = creerCase(x, y, couleur(effet.getCategorie()));
+        Text symbole = new Text(effet.getSymbole());
+        symbole.setFont(Font.font("System", FontWeight.BOLD, 13));
+        symbole.setFill(TRAIT);
+        symbole.setX(x - symbole.getLayoutBounds().getWidth() / 2);
+        symbole.setY(y + symbole.getLayoutBounds().getHeight() / 4 + 1);
+        Group groupe = new Group(tuile, symbole);
+        Tooltip.install(groupe, new Tooltip(effet.getNom() + " : " + effet.getDescription()));
+        return groupe;
     }
 
     /**

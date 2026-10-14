@@ -41,16 +41,37 @@ cd PetitsChevaux
 Les bots capturent dès qu'ils le peuvent, sinon sortent un cheval, sinon avancent leur cheval
 le plus proche de l'arrivée.
 
+## Mode « cases spéciales »
+
+À choisir dans le menu. 12 cases spéciales sont placées au hasard sur la piste (jamais sur une
+case de départ ni au pied d'un escalier) : chaque effet une fois, plus 4 en double. L'effet se
+déclenche quand un cheval **s'arrête** sur la case.
+
+| Catégorie | Case | Effet |
+|---|---|---|
+| Bonus | Rejouer (↻) | Le joueur rejoue immédiatement. |
+| Bonus | Turbo (+3) | Le cheval avance de 3 cases de plus. |
+| Malus | Croc-en-jambe (-4) | Le cheval adverse le plus avancé sur la piste recule de 4 cases. |
+| Malus | Dé maudit (-2) | Le prochain lancer de chaque adversaire perd 2 points (minimum 1). |
+| Malus | Gel (❄) | Le joueur suivant passe son prochain tour. |
+| Neutre | Coup du sort (?) | Un cheval au hasard sur la piste, peut-être celui du joueur, retourne à l'écurie. |
+| Neutre | Tremblement de terre (↓) | Tous les chevaux sur la piste reculent de 2 cases. |
+| Neutre | Vent arrière (↑) | Tous les chevaux sur la piste avancent de 2 cases. |
+
+Les déplacements forcés restent sur la piste (jamais dans l'escalier), ne déclenchent pas
+d'autre case et capturent un adversaire présent sur la case d'arrivée. Les bots visent les cases
+bonus et malus et évitent les neutres.
+
 ## Organisation du code
 
 Tout est dans le paquet `fr.utbm.petitschevaux` (`PetitsChevaux/src/main/java`).
 
 | Rôle | Classes |
 |---|---|
-| Modèle (sans JavaFX) | `Jeu` (tours, bots, victoire), `Plateau` (règles de déplacement), `Joueur`, `Cheval`, `De`, `Couleur` |
+| Modèle (sans JavaFX) | `Jeu` (tours, bots, victoire), `Plateau` (règles de déplacement, cases spéciales), `Joueur`, `Cheval`, `De`, `Couleur`, `Statistiques`, `TiragePremierJoueur`, `ModeJeu`, `CaseSpeciale`, `EffetsSpeciaux` |
 | Sauvegarde | `Sauvegarde` |
 | Vues | `PlateauView`, `Quartier` (escaliers), `EcurieView`, `ChevalView`, `DeView`, `Rendu` (couleurs et dimensions communes) |
-| Contrôleurs | `Menu` (`menu-view.fxml`), `PartieController` (`partie-view.fxml`) |
+| Contrôleurs | `Menu` (`menu-view.fxml`), `TirageController` (`tirage-view.fxml`), `PartieController` (`partie-view.fxml`), `VictoireController` (`victoire-view.fxml`) |
 | Lancement | `Launcher`, `PetitsChevauxApp` |
 
 La position d'un cheval est relative à son joueur : 0 = écurie, 1 à 56 = piste

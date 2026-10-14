@@ -1,7 +1,11 @@
 package fr.utbm.petitschevaux;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.TreeMap;
 
 /**
  * Règles de déplacement sur le plateau.
@@ -23,6 +27,92 @@ public class Plateau {
     public static final int CASES_PAR_QUARTIER = NOMBRE_CASES / Couleur.values().length;
     /** Case de départ du premier quartier, sur la piste absolue. */
     private static final int PREMIER_DEPART = CASES_PAR_QUARTIER / 2 + 1;
+
+    /** Nombre de cases spéciales placées en mode {@link ModeJeu#CASES_SPECIALES}. */
+    public static final int NOMBRE_CASES_SPECIALES = 12;
+
+    /** Cases spéciales, indexées par position absolue sur la piste. */
+    private final Map<Integer, CaseSpeciale> casesSpeciales = new TreeMap<>();
+
+    /**
+     * Place au hasard les cases spéciales : chaque effet une fois, puis des effets
+     * tirés au hasard jusqu'à {@link #NOMBRE_CASES_SPECIALES}. Les cases de départ
+     * et les pieds d'escalier restent normaux.
+     *
+     * @param hasard générateur aléatoire
+     */
+    public void placerCasesSpeciales(Random hasard) {
+        casesSpeciales.clear();
+        List<Integer> libres = new ArrayList<>();
+        for (int position = 0; position < NOMBRE_CASES; position++) {
+            if (peutEtreSpeciale(position)) {
+                libres.add(position);
+            }
+        }
+        Collections.shuffle(libres, hasard);
+        CaseSpeciale[] effets = CaseSpeciale.values();
+        for (int i = 0; i < NOMBRE_CASES_SPECIALES; i++) {
+            CaseSpeciale effet = i < effets.length ? effets[i] : effets[hasard.nextInt(effets.length)];
+            casesSpeciales.put(libres.get(i), effet);
+        }
+    }
+
+    /**
+     * Retire toutes les cases spéciales (avant d'en restaurer depuis une sauvegarde).
+     */
+    void viderCasesSpeciales() {
+        casesSpeciales.clear();
+    }
+
+    /**
+     * Place une case spéciale à une position donnée (sauvegarde, tests).
+     *
+     * @param positionAbsolue case de la piste (0 à 55)
+     * @param effet effet de la case
+     */
+    public void placerCaseSpeciale(int positionAbsolue, CaseSpeciale effet) {
+        if (!peutEtreSpeciale(positionAbsolue)) {
+            throw new IllegalArgumentException("Cette case ne peut pas être spéciale : " + positionAbsolue);
+        }
+        casesSpeciales.put(positionAbsolue, effet);
+    }
+
+    /**
+     * @param positionAbsolue case de la piste (0 à 55)
+     * @return l'effet de la case, ou {@code null} pour une case normale
+     */
+    public CaseSpeciale getCaseSpeciale(int positionAbsolue) {
+        return casesSpeciales.get(positionAbsolue);
+    }
+
+    /**
+     * @return les cases spéciales par position absolue (non modifiable)
+     */
+    public Map<Integer, CaseSpeciale> getCasesSpeciales() {
+        return Collections.unmodifiableMap(casesSpeciales);
+    }
+
+    private static boolean peutEtreSpeciale(int positionAbsolue) {
+        if (positionAbsolue < 0 || positionAbsolue >= NOMBRE_CASES) {
+            return false;
+        }
+        for (Couleur couleur : Couleur.values()) {
+            int depart = decalageDepart(couleur);
+            int piedEscalier = Math.floorMod(depart - 1, NOMBRE_CASES);
+            if (positionAbsolue == depart || positionAbsolue == piedEscalier) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Indique si un cheval peut se poser sur une position sans tomber sur un autre cheval
+     * de son joueur.
+     */
+    public boolean estLibrePour(Joueur joueur, Cheval cheval, int positionRelative) {
+        return !occupeeParLeJoueur(joueur, cheval, positionRelative);
+    }
 
     /**
      * Case absolue de la piste où sortent les chevaux d'une couleur.
@@ -103,6 +193,13 @@ public class Plateau {
             return -1;
         }
         return absolue(joueur, cheval.getPosition());
+    }
+
+    /**
+     * @return la case spéciale sur laquelle arriverait le cheval, ou {@code null}
+     */
+    public CaseSpeciale caseSpecialeAtteinte(Joueur joueur, Cheval cheval, int valeur) {
+        return casesSpeciales.get(absolue(joueur, destination(cheval, valeur)));
     }
 
     /**

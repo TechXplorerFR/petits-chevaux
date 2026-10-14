@@ -48,6 +48,37 @@ class Statistiques {
   -toursPasses : int
   +getMoyenneDe() double
 }
+class ModeJeu {
+  <<enumeration>>
+  CLASSIQUE
+  CASES_SPECIALES
+}
+class CaseSpeciale {
+  <<enumeration>>
+  REJOUER
+  TURBO
+  CROC_EN_JAMBE
+  DE_MAUDIT
+  GEL
+  COUP_DU_SORT
+  TREMBLEMENT
+  VENT_ARRIERE
+  +getCategorie() Categorie
+  +getDescription() String
+}
+class EffetsSpeciaux {
+  -malusDe : Map~Joueur,Integer~
+  -toursGeles : Map~Joueur,Integer~
+  ~appliquer(CaseSpeciale, Joueur, Cheval, Joueur) String
+  ~appliquerMalusDe(Joueur, int) int
+  ~consommerGel(Joueur) boolean
+}
+class Evenement {
+  <<record>>
+  joueur : Joueur
+  effet : CaseSpeciale
+  message : String
+}
 class Sauvegarde {
   +sauvegarder(Jeu, Path)$
   +charger(Path)$ Jeu
@@ -65,6 +96,8 @@ class Jeu {
   +getDuree() Duration
   +getNombreLancers() int
   +getHistorique() List~Lancer~
+  +getMode() ModeJeu
+  +getJournal() List~Evenement~
 }
 class Etat {
   <<enumeration>>
@@ -83,6 +116,8 @@ class Plateau {
   +capturerait(Joueur, Cheval, int, List) boolean
   +gererCapture(Joueur, Cheval, List) List~Joueur~
   +decalageDepart(Couleur)$ int
+  +placerCasesSpeciales(Random)
+  +getCaseSpeciale(int) CaseSpeciale
 }
 class De {
   -valeur : int
@@ -144,6 +179,12 @@ Jeu *-- De
 Jeu o-- "4" Joueur
 Jeu --> Etat
 Jeu *-- Lancer
+Jeu --> ModeJeu
+Jeu *-- EffetsSpeciaux
+Jeu *-- Evenement
+Plateau o-- CaseSpeciale
+EffetsSpeciaux ..> CaseSpeciale
+Evenement --> CaseSpeciale
 Joueur *-- "4" Cheval
 Joueur *-- Statistiques
 Joueur --> Couleur

@@ -11,6 +11,7 @@ import javafx.stage.Stage;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
@@ -70,9 +71,17 @@ public class VictoireController {
         return tuile;
     }
 
+    private boolean casesSpeciales() {
+        return jeu.getMode() == ModeJeu.CASES_SPECIALES;
+    }
+
     private void afficherTableau() {
-        for (int colonne = 0; colonne < COLONNES.length; colonne++) {
-            Label entete = cellule(COLONNES[colonne], true);
+        List<String> colonnes = new ArrayList<>(List.of(COLONNES));
+        if (casesSpeciales()) {
+            colonnes.add("Spéciales");
+        }
+        for (int colonne = 0; colonne < colonnes.size(); colonne++) {
+            Label entete = cellule(colonnes.get(colonne), true);
             entete.setStyle(entete.getStyle() + " -fx-text-fill: #6b665e;");
             tableau.add(entete, colonne, 0);
         }
@@ -91,8 +100,9 @@ public class VictoireController {
                     String.valueOf(stats.getCasesParcourues()),
                     String.valueOf(stats.getCaptures()),
                     String.valueOf(stats.getChevauxPerdus()),
-                    String.valueOf(stats.getToursPasses()) };
-            for (int colonne = 0; colonne < valeurs.length; colonne++) {
+                    String.valueOf(stats.getToursPasses()),
+                    String.valueOf(stats.getCasesSpeciales()) };
+            for (int colonne = 0; colonne < colonnes.size(); colonne++) {
                 tableau.add(colonne == 1 ? nom : cellule(valeurs[colonne], rang == 0), colonne, rang + 1);
             }
         }
@@ -114,6 +124,9 @@ public class VictoireController {
         ajouterDistinction("Le souffre-douleur", "cheval(aux) perdu(s)", Statistiques::getChevauxPerdus);
         ajouterDistinction("Le marathonien", "cases parcourues", Statistiques::getCasesParcourues);
         ajouterDistinctionMoyenne();
+        if (casesSpeciales()) {
+            ajouterDistinction("L'aventurier", "case(s) spéciale(s)", Statistiques::getCasesSpeciales);
+        }
     }
 
     private void ajouterDistinction(String titre, String unite, ToIntFunction<Statistiques> critere) {
@@ -170,7 +183,7 @@ public class VictoireController {
                 .map(joueur -> new Joueur(joueur.getNom(), joueur.getCouleur()))
                 .toList();
         try {
-            PetitsChevauxApp.afficherTirage(getStage(), new Jeu(humains));
+            PetitsChevauxApp.afficherTirage(getStage(), new Jeu(humains, jeu.getMode()));
         } catch (IOException e) {
             PetitsChevauxApp.afficherErreur("Impossible de relancer une partie", e);
         }

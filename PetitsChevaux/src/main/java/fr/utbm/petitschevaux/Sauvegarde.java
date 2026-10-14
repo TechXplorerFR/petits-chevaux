@@ -29,12 +29,19 @@ public final class Sauvegarde {
         donnees.setProperty("de", String.valueOf(jeu.getDe().getValeur()));
         donnees.setProperty("attenteChoix", String.valueOf(jeu.isAttenteChoix()));
         donnees.setProperty("duree", String.valueOf(jeu.getDuree().toMillis()));
+        donnees.setProperty("mode", jeu.getMode().name());
+        // Format « position:EFFET,position:EFFET », positions absolues sur la piste.
+        donnees.setProperty("casesSpeciales", jeu.getPlateau().getCasesSpeciales().entrySet().stream()
+                .map(entree -> entree.getKey() + ":" + entree.getValue().name())
+                .collect(Collectors.joining(",")));
         for (int i = 0; i < joueurs.size(); i++) {
             Joueur joueur = joueurs.get(i);
             String prefixe = "joueur." + i + ".";
             donnees.setProperty(prefixe + "nom", joueur.getNom());
             donnees.setProperty(prefixe + "couleur", joueur.getCouleur().name());
             donnees.setProperty(prefixe + "bot", String.valueOf(joueur.isBot()));
+            donnees.setProperty(prefixe + "malusDe", String.valueOf(jeu.getMalusDe(joueur)));
+            donnees.setProperty(prefixe + "gel", String.valueOf(jeu.getToursGeles(joueur)));
             donnees.setProperty(prefixe + "stats", Arrays.stream(joueur.getStatistiques().versTableau())
                     .mapToObj(String::valueOf).collect(Collectors.joining(";")));
             List<Cheval> chevaux = joueur.getChevaux();
@@ -72,7 +79,15 @@ public final class Sauvegarde {
                 }
                 joueurs.add(joueur);
             }
-            Jeu jeu = new Jeu(joueurs);
+            ModeJeu mode = ModeJeu.valueOf(donnees.getProperty("mode", ModeJeu.CLASSIQUE.name()));
+            Jeu jeu = new Jeu(joueurs, mode);
+            restaurerCasesSpeciales(jeu.getPlateau(), donnees.getProperty("casesSpeciales", ""));
+            for (int i = 0; i < nombreJoueurs; i++) {
+                String prefixe = "joueur." + i + ".";
+                jeu.restaurerEffets(joueurs.get(i),
+                        Integer.parseInt(donnees.getProperty(prefixe + "malusDe", "0")),
+                        Integer.parseInt(donnees.getProperty(prefixe + "gel", "0")));
+            }
             // Le joueur courant est retrouvé par sa couleur : l'ordre du fichier peut différer.
             Couleur couleurCourante = joueurs.get(
                     Integer.parseInt(lire(donnees, "joueurCourant"))).getCouleur();
@@ -84,6 +99,18 @@ public final class Sauvegarde {
             return jeu;
         } catch (IllegalArgumentException | IndexOutOfBoundsException e) {
             throw new IOException("Fichier de sauvegarde invalide : " + e.getMessage(), e);
+        }
+    }
+
+    private static void restaurerCasesSpeciales(Plateau plateau, String valeur) {
+        if (valeur.isBlank()) {
+            return;
+        }
+        plateau.viderCasesSpeciales();
+        for (String caseSpeciale : valeur.split(",")) {
+            String[] parties = caseSpeciale.split(":");
+            plateau.placerCaseSpeciale(Integer.parseInt(parties[0].trim()),
+                    CaseSpeciale.valueOf(parties[1].trim()));
         }
     }
 

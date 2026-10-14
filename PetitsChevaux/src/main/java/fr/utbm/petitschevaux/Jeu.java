@@ -7,6 +7,7 @@ import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 
 /**
  * Déroulement d'une partie : joueurs, tour courant, dé et règles de tour.
@@ -31,10 +32,19 @@ public class Jeu {
     public record Lancer(Joueur joueur, int valeur) {
     }
 
+    /** Un effet de case spéciale qui s'est produit, pour le journal affiché. */
+    public record Evenement(Joueur joueur, CaseSpeciale effet, String message) {
+    }
+
+    public static final int TAILLE_JOURNAL = 5;
+
     private final List<Joueur> joueurs;
     private final Plateau plateau = new Plateau();
     private final De de;
+    private final ModeJeu mode;
+    private final EffetsSpeciaux effets;
     private final LinkedList<Lancer> historique = new LinkedList<>();
+    private final LinkedList<Evenement> journal = new LinkedList<>();
     private int joueurCourant;
     private Etat etat = Etat.ATTENTE_LANCER;
     private Joueur vainqueur;
@@ -50,7 +60,15 @@ public class Jeu {
      * @param joueurs joueurs choisis (une couleur chacun)
      */
     public Jeu(List<Joueur> joueurs) {
-        this(joueurs, new De());
+        this(joueurs, new De(), ModeJeu.CLASSIQUE);
+    }
+
+    /**
+     * @param joueurs joueurs choisis (une couleur chacun)
+     * @param mode mode de jeu ; en mode cases spéciales, elles sont placées au hasard
+     */
+    public Jeu(List<Joueur> joueurs, ModeJeu mode) {
+        this(joueurs, new De(), mode);
     }
 
     /**
@@ -58,8 +76,22 @@ public class Jeu {
      * @param de dé utilisé (permet un dé truqué dans les tests)
      */
     public Jeu(List<Joueur> joueurs, De de) {
+        this(joueurs, de, ModeJeu.CLASSIQUE);
+    }
+
+    /**
+     * @param joueurs joueurs choisis (une couleur chacun)
+     * @param de dé utilisé (permet un dé truqué dans les tests)
+     * @param mode mode de jeu ; en mode cases spéciales, elles sont placées au hasard
+     */
+    public Jeu(List<Joueur> joueurs, De de, ModeJeu mode) {
         this.de = de;
+        this.mode = mode;
         this.joueurs = new ArrayList<>(joueurs == null ? List.of() : joueurs);
+        this.effets = new EffetsSpeciaux(plateau, this.joueurs);
+        if (mode == ModeJeu.CASES_SPECIALES) {
+            plateau.placerCasesSpeciales(new Random());
+        }
         completerAvecBots();
         this.joueurs.sort(Comparator.comparing(Joueur::getCouleur));
         if (this.joueurs.size() != MAX_JOUEURS
@@ -162,11 +194,19 @@ public class Jeu {
             return 0;
         }
         int valeur = de.lancer();
+        int valeurMaudite = effets.appliquerMalusDe(getJoueurActif(), valeur);
+        if (valeurMaudite != valeur) {
+            ajouterEvenement(new Evenement(getJoueurActif(), CaseSpeciale.DE_MAUDIT,
+                    "Dé maudit : " + getJoueurActif().getNom() + " obtient " + valeurMaudite
+                            + " au lieu de " + valeur + "."));
+            valeur = valeurMaudite;
+            de.restaurer(valeur);
+        }
         ajouterHistorique(new Lancer(getJoueurActif(), valeur));
         getJoueurActif().getStatistiques().enregistrerLancer(valeur);
         if (calculerChevauxDeplacables().isEmpty()) {
             getJoueurActif().getStatistiques().enregistrerTourPasse();
-            finirTour(valeur);
+            finirTour(valeur, false);
         } else {
             etat = Etat.ATTENTE_CHOIX;
         }
@@ -214,10 +254,29 @@ public class Jeu {
             statistiques.enregistrerCapture();
             victime.getStatistiques().enregistrerChevalPerdu();
         }
+        CaseSpeciale effet = declencherCaseSpeciale(joueur, cheval);
         if (!verifierVictoire()) {
-            finirTour(de.getValeur());
+            finirTour(de.getValeur(), effet == CaseSpeciale.REJOUER);
         }
         return true;
+    }
+
+    /**
+     * Applique l'effet de la case spéciale où le cheval vient de s'arrêter, s'il y en a une.
+     *
+     * @return l'effet déclenché, ou {@code null}
+     */
+    private CaseSpeciale declencherCaseSpeciale(Joueur joueur, Cheval cheval) {
+        if (mode != ModeJeu.CASES_SPECIALES) {
+            return null;
+        }
+        CaseSpeciale effet = plateau.getCaseSpeciale(plateau.positionAbsolue(joueur, cheval));
+        if (effet != null) {
+            joueur.getStatistiques().enregistrerCaseSpeciale();
+            String message = effets.appliquer(effet, joueur, cheval, joueurSuivant(joueurCourant));
+            ajouterEvenement(new Evenement(joueur, effet, effet.getNom() + " ! " + message));
+        }
+        return effet;
     }
 
     /**
@@ -236,16 +295,63 @@ public class Jeu {
     }
 
     /**
-     * Stratégie du bot : capturer si possible, sinon sortir un cheval,
-     * sinon avancer le cheval le plus proche de l'arrivée.
+     * Stratégie du bot : capturer si possible, sinon viser une case bonus ou malus
+     * (et éviter les neutres), sinon sortir un cheval, sinon avancer le plus avancé.
      */
     private Optional<Cheval> choisirChevalBot() {
         Joueur bot = getJoueurActif();
         int valeur = de.getValeur();
         return getChevauxDeplacables().stream().max(Comparator
                 .comparing((Cheval cheval) -> plateau.capturerait(bot, cheval, valeur, joueurs))
+                .thenComparingInt(cheval -> interetCase(plateau.caseSpecialeAtteinte(bot, cheval, valeur)))
                 .thenComparing(cheval -> !cheval.isSorti())
                 .thenComparingInt(Cheval::getPosition));
+    }
+
+    private int interetCase(CaseSpeciale effet) {
+        if (mode != ModeJeu.CASES_SPECIALES || effet == null) {
+            return 0;
+        }
+        return effet.getCategorie() == CaseSpeciale.Categorie.NEUTRE ? -1 : 1;
+    }
+
+    public ModeJeu getMode() {
+        return mode;
+    }
+
+    /**
+     * @return les derniers effets de cases spéciales, du plus récent au plus ancien
+     */
+    public List<Evenement> getJournal() {
+        return Collections.unmodifiableList(journal);
+    }
+
+    /**
+     * @return points retirés au prochain lancer du joueur (dé maudit), 0 sinon
+     */
+    public int getMalusDe(Joueur joueur) {
+        return effets.getMalusDe(joueur);
+    }
+
+    /**
+     * @return nombre de tours que le joueur doit encore passer (gel), 0 sinon
+     */
+    public int getToursGeles(Joueur joueur) {
+        return effets.getToursGeles(joueur);
+    }
+
+    /**
+     * Restaure les effets en attente d'un joueur, lus dans une sauvegarde.
+     */
+    void restaurerEffets(Joueur joueur, int malusDe, int toursGeles) {
+        effets.restaurer(joueur, malusDe, toursGeles);
+    }
+
+    /**
+     * Remplace le hasard des cases spéciales (tests).
+     */
+    void setHasard(Random hasard) {
+        effets.setHasard(hasard);
     }
 
     /**
@@ -329,11 +435,32 @@ public class Jeu {
         }
     }
 
-    private void finirTour(int valeur) {
+    private void ajouterEvenement(Evenement evenement) {
+        journal.addFirst(evenement);
+        if (journal.size() > TAILLE_JOURNAL) {
+            journal.removeLast();
+        }
+    }
+
+    /**
+     * Termine le tour : le même joueur rejoue sur un 6 (ou une case « Rejouer »),
+     * sinon la main passe au suivant, en sautant les joueurs gelés.
+     */
+    private void finirTour(int valeur, boolean rejouer) {
         etat = Etat.ATTENTE_LANCER;
-        if (valeur != 6) {
+        if (valeur == 6 || rejouer) {
+            return;
+        }
+        joueurCourant = (joueurCourant + 1) % joueurs.size();
+        while (effets.consommerGel(getJoueurActif())) {
+            ajouterEvenement(new Evenement(getJoueurActif(), CaseSpeciale.GEL,
+                    "Gel : " + getJoueurActif().getNom() + " passe son tour."));
             joueurCourant = (joueurCourant + 1) % joueurs.size();
         }
+    }
+
+    private Joueur joueurSuivant(int index) {
+        return joueurs.get((index + 1) % joueurs.size());
     }
 
     private boolean verifierVictoire() {

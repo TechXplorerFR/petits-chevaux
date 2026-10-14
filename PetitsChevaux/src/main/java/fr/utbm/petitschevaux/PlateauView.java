@@ -220,7 +220,10 @@ public class PlateauView {
                     fond = Rendu.couleur(couleur);
                 }
             }
-            racine.getChildren().add(Rendu.creerCase(p[0], p[1], fond));
+            CaseSpeciale effet = plateau.getCaseSpeciale(i);
+            racine.getChildren().add(effet == null
+                    ? Rendu.creerCase(p[0], p[1], fond)
+                    : Rendu.creerCaseSpeciale(p[0], p[1], effet));
         }
 
         for (Couleur couleur : Couleur.values()) {

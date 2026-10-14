@@ -11,6 +11,20 @@
 <BorderPane xmlns:fx="http://javafx.com/fxml"
             fx:controller="fr.utbm.petitschevaux.PartieController">
 
+    <left>
+        <!-- Visible uniquement en mode « cases spéciales » -->
+        <VBox fx:id="panneauSpecial" spacing="10.0" prefWidth="250.0" maxWidth="250.0">
+            <padding>
+                <Insets bottom="16.0" left="16.0" right="8.0" top="16.0"/>
+            </padding>
+            <Label text="Cases spéciales" style="-fx-font-weight: bold; -fx-font-size: 14px;"/>
+            <VBox fx:id="legende" spacing="6.0"/>
+            <Label text="Derniers effets" style="-fx-font-weight: bold; -fx-font-size: 14px;"/>
+            <VBox fx:id="journal" spacing="6.0" VBox.vgrow="ALWAYS"
+                  style="-fx-border-color: #c6c0b5; -fx-border-radius: 4; -fx-padding: 8;"/>
+        </VBox>
+    </left>
+
     <center>
         <Pane fx:id="zonePlateau" prefWidth="600.0" prefHeight="600.0"/>
     </center>
