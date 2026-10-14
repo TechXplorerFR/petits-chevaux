@@ -5,9 +5,11 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
+import javafx.scene.image.Image;
 import javafx.stage.Stage;
 
 import java.io.IOException;
+import java.net.URL;
 
 /**
  * Point d'entrée JavaFX et navigation entre les écrans :
@@ -20,6 +22,11 @@ public class PetitsChevauxApp extends Application {
     @Override
     public void start(Stage stage) throws IOException {
         stage.setTitle("Petits chevaux");
+        URL icone = PetitsChevauxApp.class.getResource("petits-chevaux.png");
+        if (icone == null) {
+            throw new IOException("Icône de l'application introuvable : petits-chevaux.png");
+        }
+        stage.getIcons().add(new Image(icone.toExternalForm()));
         afficherMenu(stage);
         stage.show();
     }
