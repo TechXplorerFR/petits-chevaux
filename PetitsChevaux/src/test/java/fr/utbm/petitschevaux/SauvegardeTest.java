@@ -7,11 +7,13 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -79,6 +81,39 @@ class SauvegardeTest {
         assertTrue(bleu.getChevaux().get(1).isTermine());
         assertEquals(Couleur.BLEU.ordinal(), jeu.getJoueurCourant());
         assertTrue(jeu.peutLancer());
+    }
+
+    @Test
+    void laSauvegardeAutomatiqueCreeLeDossierPuisMetAJourLeMemeFichier() throws IOException {
+        Path sauvegardes = dossier.resolve("sauvegardes");
+        Jeu jeu = new Jeu(List.of(new Joueur("Alice", Couleur.VERT)));
+
+        Path premier = Sauvegarde.sauvegarderDansLeDossier(jeu, sauvegardes, null);
+        jeu.getJoueurs().get(3).getChevaux().get(0).setPosition(12);
+        Path deuxieme = Sauvegarde.sauvegarderDansLeDossier(jeu, sauvegardes, premier);
+
+        assertEquals(sauvegardes, premier.getParent());
+        assertTrue(premier.getFileName().toString().startsWith("partie_"));
+        assertEquals(premier, deuxieme, "la même partie réutilise son fichier");
+        assertEquals(List.of(premier), Sauvegarde.listerSauvegardes(sauvegardes));
+        assertEquals(12, Sauvegarde.charger(premier).getJoueurs().get(3).getChevaux().get(0).getPosition());
+    }
+
+    @Test
+    void deuxPartiesDifferentesOntDeuxFichiersListesDuPlusRecentAuPlusAncien() throws IOException {
+        Path sauvegardes = dossier.resolve("sauvegardes");
+        Path ancienne = Sauvegarde.sauvegarderDansLeDossier(new Jeu(List.of()), sauvegardes, null);
+        Files.setLastModifiedTime(ancienne, FileTime.fromMillis(0));
+        Path recente = Sauvegarde.sauvegarderDansLeDossier(new Jeu(List.of()), sauvegardes, null);
+        Files.writeString(sauvegardes.resolve("notes.txt"), "pas une sauvegarde");
+
+        assertNotEquals(ancienne, recente);
+        assertEquals(List.of(recente, ancienne), Sauvegarde.listerSauvegardes(sauvegardes));
+    }
+
+    @Test
+    void sansDossierIlNYAAucuneSauvegarde() throws IOException {
+        assertTrue(Sauvegarde.listerSauvegardes(dossier.resolve("inexistant")).isEmpty());
     }
 
     @Test

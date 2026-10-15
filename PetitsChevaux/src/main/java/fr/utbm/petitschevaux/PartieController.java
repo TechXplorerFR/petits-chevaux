@@ -7,12 +7,11 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 /**
  * Contrôleur de l'écran de partie : relaie les actions du joueur au {@link Jeu}
@@ -37,13 +36,19 @@ public class PartieController {
     private PauseTransition pauseBot;
     /** Pause avant l'écran de victoire, une fois la partie terminée. */
     private PauseTransition pauseVictoire;
+    /** Fichier de cette partie dans le dossier des sauvegardes, ou {@code null} s'il n'existe pas encore. */
+    private Path fichierSauvegarde;
 
     /**
      * Branche une partie (nouvelle ou chargée) sur la vue.
      * Appelé par {@link PetitsChevauxApp#afficherPartie} après le chargement du FXML.
+     *
+     * @param fichierSauvegarde fichier d'où la partie a été chargée (mis à jour à la prochaine
+     *                          sauvegarde), ou {@code null} pour une nouvelle partie
      */
-    public void setJeu(Jeu jeu) {
+    public void setJeu(Jeu jeu, Path fichierSauvegarde) {
         this.jeu = jeu;
+        this.fichierSauvegarde = fichierSauvegarde;
         plateauView = new PlateauView(jeu.getPlateau(), jeu.getJoueurs(), this::onChevalSelectionne);
         zonePlateau.getChildren().setAll(plateauView.getRoot());
         deView = new DeView();
@@ -91,18 +96,9 @@ public class PartieController {
 
     @FXML
     private void onSauvegarder() {
-        FileChooser choix = new FileChooser();
-        choix.setTitle("Sauvegarder la partie");
-        choix.setInitialFileName("partie." + Sauvegarde.EXTENSION);
-        choix.getExtensionFilters().add(
-                new FileChooser.ExtensionFilter("Partie de petits chevaux", "*." + Sauvegarde.EXTENSION));
-        File fichier = choix.showSaveDialog(getStage());
-        if (fichier == null) {
-            return;
-        }
         try {
-            Sauvegarde.sauvegarder(jeu, fichier.toPath());
-            information.setText("Partie sauvegardée.");
+            fichierSauvegarde = Sauvegarde.sauvegarderDansLeDossier(jeu, Sauvegarde.DOSSIER, fichierSauvegarde);
+            information.setText("Partie sauvegardée : " + fichierSauvegarde.getFileName());
         } catch (IOException e) {
             PetitsChevauxApp.afficherErreur("Impossible de sauvegarder", e);
         }

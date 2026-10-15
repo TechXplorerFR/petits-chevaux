@@ -10,6 +10,7 @@ import javafx.stage.Stage;
 
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Path;
 
 /**
  * Point d'entrée JavaFX et navigation entre les écrans :
@@ -45,10 +46,20 @@ public class PetitsChevauxApp extends Application {
         afficher(stage, racine);
     }
 
+    /**
+     * Affiche une nouvelle partie (pas encore sauvegardée).
+     */
     public static void afficherPartie(Stage stage, Jeu jeu) throws IOException {
+        afficherPartie(stage, jeu, null);
+    }
+
+    /**
+     * Affiche une partie chargée : les prochaines sauvegardes mettront à jour son fichier.
+     */
+    public static void afficherPartie(Stage stage, Jeu jeu, Path fichierSauvegarde) throws IOException {
         FXMLLoader loader = charger("partie-view.fxml");
         Parent racine = loader.load();
-        loader.<PartieController>getController().setJeu(jeu);
+        loader.<PartieController>getController().setJeu(jeu, fichierSauvegarde);
         afficher(stage, racine);
     }
 

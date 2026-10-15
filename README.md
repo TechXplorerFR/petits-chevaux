@@ -4,8 +4,9 @@
 
 Jeu de petits chevaux en JavaFX, réalisé dans le cadre du projet PR70 (UTBM).
 
-De 1 à 4 joueurs humains ; les couleurs restantes sont jouées par des bots.
-Les parties peuvent être sauvegardées et rechargées (fichiers `.pcx`).
+De 1 à 4 joueurs humains, chacun choisit sa couleur ; les couleurs restantes sont jouées
+par des bots. Les parties sont sauvegardées sans boîte de dialogue dans le dossier
+`sauvegardes/` (créé là où le jeu est lancé, fichiers `.pcx`) et rechargées depuis le menu.
 
 ## Lancer le jeu
 

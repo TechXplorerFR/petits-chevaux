@@ -62,3 +62,5 @@ build/
 
 ### Mac OS ###
 .DS_Store
+### Sauvegardes de parties (dossier créé par le jeu) ###
+sauvegardes/
