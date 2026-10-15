@@ -58,8 +58,11 @@ déclenche quand un cheval **s'arrête** sur la case.
 | Neutre | Tremblement de terre (↓) | Tous les chevaux sur la piste reculent de 2 cases. |
 | Neutre | Vent arrière (↑) | Tous les chevaux sur la piste avancent de 2 cases. |
 
-Les déplacements forcés restent sur la piste (jamais dans l'escalier), ne déclenchent pas
-d'autre case et capturent un adversaire présent sur la case d'arrivée. Les bots visent les cases
+Les déplacements forcés restent sur la piste (jamais dans l'escalier) et capturent un
+adversaire présent sur la case d'arrivée. Un cheval déplacé par un effet qui s'arrête sur une
+autre case spéciale la déclenche à son tour, au nom de son propriétaire (réaction en chaîne).
+Dans une même chaîne, chaque case ne se déclenche qu'une fois, pour éviter les boucles ;
+« Rejouer » n'a d'effet que pour le joueur dont c'est le tour. Les bots visent les cases
 bonus et malus et évitent les neutres.
 
 ## Organisation du code
