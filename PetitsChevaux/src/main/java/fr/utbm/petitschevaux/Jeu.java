@@ -1,13 +1,17 @@
 package fr.utbm.petitschevaux;
 
 import java.time.Duration;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Deque;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 
 /**
  * Déroulement d'une partie : joueurs, tour courant, dé et règles de tour.
@@ -254,29 +258,48 @@ public class Jeu {
             statistiques.enregistrerCapture();
             victime.getStatistiques().enregistrerChevalPerdu();
         }
-        CaseSpeciale effet = declencherCaseSpeciale(joueur, cheval);
+        boolean rejouer = declencherCasesSpeciales(joueur, cheval);
         if (!verifierVictoire()) {
-            finirTour(de.getValeur(), effet == CaseSpeciale.REJOUER);
+            finirTour(de.getValeur(), rejouer);
         }
         return true;
     }
 
     /**
-     * Applique l'effet de la case spéciale où le cheval vient de s'arrêter, s'il y en a une.
+     * Applique l'effet de la case spéciale où le cheval vient de s'arrêter, puis celui des
+     * cases où arrivent les chevaux déplacés par cet effet, et ainsi de suite (réaction en
+     * chaîne). Chaque case ne se déclenche qu'une fois par chaîne, ce qui garantit qu'elle
+     * se termine.
      *
-     * @return l'effet déclenché, ou {@code null}
+     * @return vrai si le joueur courant doit rejouer (case « Rejouer » atteinte par un de ses chevaux)
      */
-    private CaseSpeciale declencherCaseSpeciale(Joueur joueur, Cheval cheval) {
+    private boolean declencherCasesSpeciales(Joueur joueur, Cheval cheval) {
         if (mode != ModeJeu.CASES_SPECIALES) {
-            return null;
+            return false;
         }
-        CaseSpeciale effet = plateau.getCaseSpeciale(plateau.positionAbsolue(joueur, cheval));
-        if (effet != null) {
-            joueur.getStatistiques().enregistrerCaseSpeciale();
-            String message = effets.appliquer(effet, joueur, cheval, joueurSuivant(joueurCourant));
-            ajouterEvenement(new Evenement(joueur, effet, effet.getNom() + " ! " + message));
+        boolean rejouer = false;
+        Set<Integer> casesDeclenchees = new HashSet<>();
+        Deque<EffetsSpeciaux.Arrivee> aVerifier = new ArrayDeque<>();
+        aVerifier.add(new EffetsSpeciaux.Arrivee(joueur, cheval));
+        while (!aVerifier.isEmpty()) {
+            EffetsSpeciaux.Arrivee arrivee = aVerifier.poll();
+            // La position est relue maintenant : le cheval a pu être capturé ou déplacé entre-temps.
+            int position = plateau.positionAbsolue(arrivee.joueur(), arrivee.cheval());
+            CaseSpeciale effet = plateau.getCaseSpeciale(position);
+            if (effet == null || !casesDeclenchees.add(position)) {
+                continue;
+            }
+            Joueur declencheur = arrivee.joueur();
+            boolean sonTour = declencheur == joueur;
+            declencheur.getStatistiques().enregistrerCaseSpeciale();
+            String message = effets.appliquer(effet, declencheur, arrivee.cheval(),
+                    joueurSuivant(joueurs.indexOf(declencheur)), sonTour);
+            String prefixe = casesDeclenchees.size() > 1 ? "Réaction en chaîne – " : "";
+            ajouterEvenement(new Evenement(declencheur, effet, prefixe + effet.getNom() + " ! " + message));
+            rejouer |= effet == CaseSpeciale.REJOUER && sonTour;
+            aVerifier.addAll(effets.recupererArrivees());
         }
-        return effet;
+        return rejouer;
     }
 
     /**

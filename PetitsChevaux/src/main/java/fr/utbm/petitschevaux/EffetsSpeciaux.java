@@ -12,9 +12,10 @@ import java.util.stream.Collectors;
  * (dé maudit, gel). Utilisé par {@link Jeu} en mode {@link ModeJeu#CASES_SPECIALES}.
  *
  * <p>Les déplacements forcés (turbo, croc-en-jambe, tremblement, vent arrière) restent sur
- * la piste : ils ne font jamais entrer un cheval dans l'escalier, ne déclenchent pas
- * d'autre case spéciale, mais capturent les adversaires sur la case d'arrivée. Un cheval
- * qui tomberait sur un autre cheval de son joueur ne bouge pas.</p>
+ * la piste : ils ne font jamais entrer un cheval dans l'escalier, mais capturent les
+ * adversaires sur la case d'arrivée. Un cheval qui tomberait sur un autre cheval de son
+ * joueur ne bouge pas. Les chevaux déplacés sont signalés via {@link #recupererArrivees()}
+ * pour que {@link Jeu} déclenche la case spéciale où ils s'arrêtent (réaction en chaîne).</p>
  */
 class EffetsSpeciaux {
     static final int CASES_TURBO = 3;
@@ -22,9 +23,15 @@ class EffetsSpeciaux {
     static final int CASES_SECOUSSE = 2;
     static final int MALUS_DE = 2;
 
+    /** Un cheval qui vient d'arriver sur une case suite à un déplacement forcé. */
+    record Arrivee(Joueur joueur, Cheval cheval) {
+    }
+
     private final Plateau plateau;
     private final List<Joueur> joueurs;
     private Random hasard = new Random();
+    /** Chevaux déplacés par le dernier effet, en attente de vérification de leur case. */
+    private final List<Arrivee> arrivees = new ArrayList<>();
     /** Points retirés au prochain lancer de chaque joueur. */
     private final Map<Joueur, Integer> malusDe = new HashMap<>();
     /** Nombre de tours que chaque joueur doit encore passer. */
@@ -46,11 +53,14 @@ class EffetsSpeciaux {
      * @param joueur joueur qui a déclenché la case
      * @param cheval cheval arrivé sur la case
      * @param suivant joueur qui jouera après lui
+     * @param sonTour vrai si c'est le tour de ce joueur ; « Rejouer » n'a d'effet que dans ce cas
      * @return description de ce qui s'est passé, pour les joueurs
      */
-    String appliquer(CaseSpeciale effet, Joueur joueur, Cheval cheval, Joueur suivant) {
+    String appliquer(CaseSpeciale effet, Joueur joueur, Cheval cheval, Joueur suivant, boolean sonTour) {
         return switch (effet) {
-            case REJOUER -> joueur.getNom() + " rejoue !";
+            case REJOUER -> sonTour
+                    ? joueur.getNom() + " rejoue !"
+                    : "Ce n'est pas le tour de " + joueur.getNom() + " : aucun effet.";
             case TURBO -> turbo(joueur, cheval);
             case CROC_EN_JAMBE -> crocEnJambe(joueur);
             case DE_MAUDIT -> deMaudit(joueur);
@@ -153,6 +163,7 @@ class EffetsSpeciaux {
             return null;
         }
         cheval.setPosition(destination);
+        arrivees.add(new Arrivee(joueur, cheval));
         List<Joueur> victimes = plateau.gererCapture(joueur, cheval, joueurs);
         victimes.forEach(victime -> victime.getStatistiques().enregistrerChevalPerdu());
         return victimes;
@@ -173,6 +184,16 @@ class EffetsSpeciaux {
 
     private static String noms(List<Joueur> joueurs) {
         return joueurs.stream().map(Joueur::getNom).collect(Collectors.joining(", "));
+    }
+
+    /**
+     * @return les chevaux déplacés par les effets appliqués depuis le dernier appel,
+     *         dans l'ordre des déplacements (la liste interne est ensuite vidée)
+     */
+    List<Arrivee> recupererArrivees() {
+        List<Arrivee> copie = List.copyOf(arrivees);
+        arrivees.clear();
+        return copie;
     }
 
     /**

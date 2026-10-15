@@ -193,6 +193,68 @@ class CasesSpecialesTest {
     }
 
     @Test
+    void unTurboQuiArriveSurUneAutreCaseLaDeclencheAussi() {
+        preparer(CaseSpeciale.TURBO, 3);
+        jeu.getPlateau().placerCaseSpeciale(absoluePourJaune(ARRIVEE + EffetsSpeciaux.CASES_TURBO),
+                CaseSpeciale.GEL);
+
+        jouerLeChevalJaune();
+
+        assertSame(bleu, jeu.getJoueurActif(), "le gel déclenché en chaîne fait sauter Rouge");
+        assertEquals(2, jaune.getStatistiques().getCasesSpeciales());
+        // Journal, du plus récent au plus ancien : Rouge passe son tour, le gel en chaîne, le turbo.
+        Jeu.Evenement gelEnChaine = jeu.getJournal().get(1);
+        assertEquals(CaseSpeciale.GEL, gelEnChaine.effet());
+        assertTrue(gelEnChaine.message().startsWith("Réaction en chaîne"));
+        assertEquals(CaseSpeciale.TURBO, jeu.getJournal().get(2).effet());
+    }
+
+    @Test
+    void unChevalAdverseDeplaceDeclencheLaCaseAuNomDeSonProprietaire() {
+        preparer(CaseSpeciale.CROC_EN_JAMBE, 3);
+        Cheval chevalRouge = rouge.getChevaux().get(0);
+        chevalRouge.setPosition(20);
+        // Le croc-en-jambe ramène le cheval rouge en position 16, soit la case absolue 37.
+        jeu.getPlateau().placerCaseSpeciale(Plateau.decalageDepart(Couleur.ROUGE) + 15, CaseSpeciale.DE_MAUDIT);
+
+        jouerLeChevalJaune();
+
+        assertEquals(16, chevalRouge.getPosition());
+        assertEquals(1, rouge.getStatistiques().getCasesSpeciales());
+        assertEquals(0, jeu.getMalusDe(rouge), "Rouge a déclenché le dé maudit : il n'est pas puni");
+        assertEquals(EffetsSpeciaux.MALUS_DE, jeu.getMalusDe(jaune));
+        assertEquals(EffetsSpeciaux.MALUS_DE, jeu.getMalusDe(bleu));
+    }
+
+    @Test
+    void rejouerDeclencheParLeChevalDUnAutreJoueurNaPasDEffet() {
+        preparer(CaseSpeciale.CROC_EN_JAMBE, 3);
+        rouge.getChevaux().get(0).setPosition(20);
+        jeu.getPlateau().placerCaseSpeciale(Plateau.decalageDepart(Couleur.ROUGE) + 15, CaseSpeciale.REJOUER);
+
+        jouerLeChevalJaune();
+
+        assertSame(rouge, jeu.getJoueurActif(), "Jaune ne rejoue pas, la main passe normalement");
+        assertTrue(jeu.getJournal().get(0).message().contains("aucun effet"));
+    }
+
+    @Test
+    void uneReactionEnChaineNeTournePasEnBoucle() {
+        preparer(CaseSpeciale.VENT_ARRIERE, 3);
+        cheval.setPosition(20);
+        jeu.getPlateau().viderCasesSpeciales();
+        // Vent arrière en 23 → avance en 25 (Tremblement) → recule en 23 (déjà déclenchée) : fin.
+        jeu.getPlateau().placerCaseSpeciale(absoluePourJaune(23), CaseSpeciale.VENT_ARRIERE);
+        jeu.getPlateau().placerCaseSpeciale(absoluePourJaune(25), CaseSpeciale.TREMBLEMENT);
+
+        jouerLeChevalJaune();
+
+        assertEquals(23, cheval.getPosition());
+        assertEquals(2, jaune.getStatistiques().getCasesSpeciales());
+        assertEquals(2, jeu.getJournal().size());
+    }
+
+    @Test
     void laSauvegardeConserveLeModeLesCasesEtLesEffetsEnAttente() throws IOException {
         preparer(CaseSpeciale.GEL, 3);
         jeu.getPlateau().placerCaseSpeciale(30, CaseSpeciale.VENT_ARRIERE);
