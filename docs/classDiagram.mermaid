@@ -12,6 +12,7 @@ class Menu {
   -nombreJoueurs : Spinner
   -onNouvellePartie()
   -onChargerPartie()
+  -onAfficherScores()
 }
 class PartieController {
   -jeu : Jeu
@@ -52,6 +53,7 @@ class ModeJeu {
   <<enumeration>>
   CLASSIQUE
   CASES_SPECIALES
+  EN_LIGNE
 }
 class CaseSpeciale {
   <<enumeration>>
@@ -159,6 +161,77 @@ class Rendu {
   +couleur(Couleur)$ Color
 }
 
+%% --- NOUVELLES CLASSES : BDD & PERSISTENCE ---
+
+class DatabaseManager {
+  <<singleton>>
+  -connection : Connection
+  +getConnection()$ Connection
+  +initTables()$
+}
+
+class PartieDAO {
+  +sauvegarderBDD(Jeu) int
+  +chargerBDD(int) Jeu
+  +getPartiesSauvegardees() List~Integer~
+}
+
+class JoueurDAO {
+  +sauvegarderJoueur(Joueur)
+  +chargerJoueur(String) Joueur
+  +getMeilleursScores(int) List~Score~
+}
+
+class Score {
+  <<record>>
+  nomJoueur : String
+  victoires : int
+  partiesJouees : int
+  ratioVictoire : double
+}
+
+%% --- NOUVELLES CLASSES : RESEAU & CHAT ---
+
+class ReseauClient {
+  -socket : Socket
+  -out : ObjectOutputStream
+  -in : ObjectInputStream
+  +connecter(String, int) boolean
+  +deconnecter()
+  +envoyerAction(ActionReseau)
+  +envoyerMessage(Message)
+  -ecouterServeur()
+}
+
+class ServeurJeu {
+  -port : int
+  -clients : List~Socket~
+  +demarrer()
+  +arreter()
+  +diffuserAction(ActionReseau)
+  +diffuserMessage(Message)
+}
+
+class ChatController {
+  -historique : List~Message~
+  +onEnvoyerMessage(String)
+  +afficherNouveauMessage(Message)
+}
+
+class Message {
+  <<record>>
+  auteur : String
+  texte : String
+  timestamp : LocalDateTime
+}
+
+class ActionReseau {
+  <<record>>
+  typeAction : String
+  donneesJSON : String
+}
+
+%% --- RELATIONS EXISTANTES ---
 PetitsChevauxApp ..> Menu : affiche
 PetitsChevauxApp ..> TirageController : affiche
 PetitsChevauxApp ..> PartieController : affiche
@@ -169,11 +242,11 @@ TiragePremierJoueur *-- De
 TiragePremierJoueur o-- "4" Joueur
 VictoireController --> Jeu
 Menu ..> Jeu : crée
-Menu ..> Sauvegarde : charge
+Menu ..> Sauvegarde : charge (local)
 PartieController --> Jeu
 PartieController --> PlateauView
 PartieController --> DeView
-PartieController ..> Sauvegarde : sauvegarde
+PartieController ..> Sauvegarde : sauvegarde (local)
 Jeu *-- Plateau
 Jeu *-- De
 Jeu o-- "4" Joueur
@@ -193,3 +266,20 @@ PlateauView *-- "4" EcurieView
 PlateauView *-- ChevalView
 PlateauView ..> Plateau
 PlateauView ..> Rendu
+
+%% --- NOUVELLES RELATIONS ---
+Menu ..> PartieDAO : charge (bdd)
+Menu ..> JoueurDAO : charge profils & scores
+JoueurDAO ..> Score : retourne
+PartieDAO --> DatabaseManager : utilise
+JoueurDAO --> DatabaseManager : utilise
+
+PartieController ..> PartieDAO : sauvegarde (bdd)
+PartieController --> ReseauClient : connexion multi
+PartieController *-- ChatController : gere UI chat
+
+ChatController --> ReseauClient : envoie/reçoit
+ReseauClient ..> Message : traite
+ReseauClient ..> ActionReseau : traite
+ServeurJeu ..> Message : diffuse
+ServeurJeu ..> ActionReseau : diffuse
