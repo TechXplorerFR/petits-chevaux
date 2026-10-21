@@ -12,6 +12,7 @@ import javafx.scene.control.ListCell;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextInputDialog;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Circle;
@@ -187,6 +188,72 @@ public class Menu {
         } catch (IOException e) {
             PetitsChevauxApp.afficherErreur("Impossible de charger la partie", e);
         }
+    }
+
+    /**
+     * Héberge une partie en ligne : ouvre le serveur et affiche le salon. L'hôte joue avec
+     * le nom et la couleur de la première ligne, et les règles choisies ci-dessus.
+     */
+    @FXML
+    private void onHeberger() {
+        try {
+            SessionEnLigne session = SessionEnLigne.heberger(Platform::runLater, ServeurJeu.PORT_PAR_DEFAUT,
+                    nomDuPremierJoueur(), couleursJoueurs.get(0).getValue(), modeChoisi());
+            PetitsChevauxApp.afficherSalon(getStage(), session);
+        } catch (IOException e) {
+            PetitsChevauxApp.afficherErreur("Impossible d'héberger une partie (le port "
+                    + ServeurJeu.PORT_PAR_DEFAUT + " est peut-être déjà utilisé)", e);
+        }
+    }
+
+    /**
+     * Rejoint une partie en ligne : demande l'adresse de l'hôte (« 192.168.1.20 »,
+     * ou « 192.168.1.20:5555 » pour un autre port), puis affiche le salon.
+     */
+    @FXML
+    private void onRejoindre() {
+        TextInputDialog demande = new TextInputDialog("localhost");
+        demande.setTitle("Rejoindre une partie en ligne");
+        demande.setHeaderText("Adresse de l'ordinateur qui héberge la partie\n"
+                + "(affichée dans son salon, par exemple 192.168.1.20)");
+        demande.setContentText("Adresse :");
+        Optional<String> saisie = demande.showAndWait().map(String::strip).filter(texte -> !texte.isEmpty());
+        if (saisie.isEmpty()) {
+            return;
+        }
+        String adresse = saisie.get();
+        int port = ServeurJeu.PORT_PAR_DEFAUT;
+        int deuxPoints = adresse.lastIndexOf(':');
+        if (deuxPoints > 0) {
+            try {
+                port = Integer.parseInt(adresse.substring(deuxPoints + 1));
+                adresse = adresse.substring(0, deuxPoints);
+            } catch (NumberFormatException e) {
+                PetitsChevauxApp.afficherErreur("Adresse invalide", e);
+                return;
+            }
+        }
+        try {
+            SessionEnLigne session = SessionEnLigne.rejoindre(Platform::runLater, adresse, port,
+                    nomDuPremierJoueur(), couleursJoueurs.get(0).getValue());
+            PetitsChevauxApp.afficherSalon(getStage(), session);
+        } catch (IOException e) {
+            PetitsChevauxApp.afficherErreur("Impossible de rejoindre la partie sur " + adresse + ":" + port, e);
+        }
+    }
+
+    @FXML
+    private void onScores() {
+        try {
+            PetitsChevauxApp.afficherScores(getStage());
+        } catch (IOException e) {
+            PetitsChevauxApp.afficherErreur("Impossible d'afficher les scores", e);
+        }
+    }
+
+    private String nomDuPremierJoueur() {
+        String nom = nomsJoueurs.get(0).getText().strip();
+        return nom.isEmpty() ? "Joueur 1" : nom;
     }
 
     @FXML

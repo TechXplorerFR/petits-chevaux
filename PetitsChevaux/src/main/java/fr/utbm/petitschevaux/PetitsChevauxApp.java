@@ -57,20 +57,49 @@ public class PetitsChevauxApp extends Application {
      * Affiche une partie chargée : les prochaines sauvegardes mettront à jour son fichier.
      */
     public static void afficherPartie(Stage stage, Jeu jeu, Path fichierSauvegarde) throws IOException {
+        afficherPartie(stage, jeu, fichierSauvegarde, null);
+    }
+
+    /**
+     * Affiche une partie, éventuellement en ligne.
+     *
+     * @param session partie en ligne (hôte ou invité), ou {@code null} pour une partie locale
+     */
+    public static void afficherPartie(Stage stage, Jeu jeu, Path fichierSauvegarde, SessionEnLigne session)
+            throws IOException {
         FXMLLoader loader = charger("partie-view.fxml");
         Parent racine = loader.load();
-        loader.<PartieController>getController().setJeu(jeu, fichierSauvegarde);
+        loader.<PartieController>getController().setJeu(jeu, fichierSauvegarde, session);
         afficher(stage, racine);
     }
 
     /**
      * Affiche l'écran de fin de partie avec le classement et les statistiques.
+     *
+     * @param session partie en ligne, ou {@code null} pour une partie locale
      */
-    public static void afficherVictoire(Stage stage, Jeu jeu) throws IOException {
+    public static void afficherVictoire(Stage stage, Jeu jeu, SessionEnLigne session) throws IOException {
         FXMLLoader loader = charger("victoire-view.fxml");
         Parent racine = loader.load();
-        loader.<VictoireController>getController().setJeu(jeu);
+        loader.<VictoireController>getController().setJeu(jeu, session);
         afficher(stage, racine);
+    }
+
+    /**
+     * Affiche le salon d'une partie en ligne (hôte ou invité).
+     */
+    public static void afficherSalon(Stage stage, SessionEnLigne session) throws IOException {
+        FXMLLoader loader = charger("salon-view.fxml");
+        Parent racine = loader.load();
+        loader.<SalonController>getController().setSession(session);
+        afficher(stage, racine);
+    }
+
+    /**
+     * Affiche le classement des joueurs et l'historique des parties.
+     */
+    public static void afficherScores(Stage stage) throws IOException {
+        afficher(stage, charger("scores-view.fxml").load());
     }
 
     /**

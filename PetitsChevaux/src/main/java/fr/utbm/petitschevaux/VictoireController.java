@@ -2,6 +2,7 @@ package fr.utbm.petitschevaux;
 
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.GridPane;
@@ -32,10 +33,24 @@ public class VictoireController {
     @FXML private GridPane tableau;
     @FXML private FlowPane distinctions;
 
-    private Jeu jeu;
+    @FXML private Button boutonRejouer;
 
-    public void setJeu(Jeu jeu) {
+    private Jeu jeu;
+    private SessionEnLigne session;
+
+    /**
+     * @param session partie en ligne, ou {@code null} pour une partie locale
+     */
+    public void setJeu(Jeu jeu, SessionEnLigne session) {
         this.jeu = jeu;
+        this.session = session;
+        if (session != null) {
+            // En ligne, « Rejouer » passerait par un nouveau salon : on revient au menu.
+            boutonRejouer.setVisible(false);
+            boutonRejouer.setManaged(false);
+            // La partie est finie : le départ de l'hôte n'est plus une mauvaise nouvelle.
+            session.surFin(raison -> { });
+        }
         Joueur vainqueur = jeu.getVainqueur();
         titre.setText(vainqueur.getNom() + " a gagné !");
         titre.setTextFill(Rendu.couleur(vainqueur.getCouleur()));
@@ -191,6 +206,9 @@ public class VictoireController {
 
     @FXML
     private void onRetourMenu() {
+        if (session != null) {
+            session.fermer();
+        }
         try {
             PetitsChevauxApp.afficherMenu(getStage());
         } catch (IOException e) {

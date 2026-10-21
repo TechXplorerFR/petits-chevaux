@@ -73,9 +73,16 @@ public class PlateauView {
         dessinerPlateau();
     }
 
-    public void dessinerPlateau() {
+    /**
+     * Arrête les animations des pions, à appeler avant d'abandonner cette vue.
+     */
+    public void arreter() {
         vuesChevaux.forEach(ChevalView::arreter);
         vuesChevaux.clear();
+    }
+
+    public void dessinerPlateau() {
+        arreter();
         racine.getChildren().clear();
 
         Rectangle fond = new Rectangle(Rendu.TAILLE, Rendu.TAILLE, Rendu.FOND);

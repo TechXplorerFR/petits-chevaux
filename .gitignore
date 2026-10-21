@@ -64,3 +64,6 @@ build/
 .DS_Store
 ### Sauvegardes de parties (dossier créé par le jeu) ###
 sauvegardes/
+
+### Base des scores (créée par le jeu) ###
+donnees/

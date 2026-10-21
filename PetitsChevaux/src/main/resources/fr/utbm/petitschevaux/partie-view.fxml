@@ -3,6 +3,8 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.Pane?>
 <?import javafx.scene.layout.StackPane?>
@@ -12,17 +14,27 @@
             fx:controller="fr.utbm.petitschevaux.PartieController">
 
     <left>
-        <!-- Visible uniquement en mode « cases spéciales » -->
-        <VBox fx:id="panneauSpecial" spacing="10.0" prefWidth="250.0" maxWidth="250.0">
-            <padding>
-                <Insets bottom="16.0" left="16.0" right="8.0" top="16.0"/>
-            </padding>
-            <Label text="Cases spéciales" style="-fx-font-weight: bold; -fx-font-size: 14px;"/>
-            <VBox fx:id="legende" spacing="6.0"/>
-            <Label text="Derniers effets" style="-fx-font-weight: bold; -fx-font-size: 14px;"/>
-            <VBox fx:id="journal" spacing="6.0" VBox.vgrow="ALWAYS"
-                  style="-fx-border-color: #c6c0b5; -fx-border-radius: 4; -fx-padding: 8;"/>
-        </VBox>
+        <!-- Onglets affichés seulement s'ils servent : cases spéciales et/ou chat en ligne -->
+        <TabPane fx:id="panneauGauche" prefWidth="260.0" maxWidth="260.0" tabClosingPolicy="UNAVAILABLE">
+            <Tab fx:id="ongletCases" text="Cases spéciales">
+                <VBox fx:id="panneauSpecial" spacing="10.0">
+                    <padding>
+                        <Insets bottom="12.0" left="12.0" right="8.0" top="12.0"/>
+                    </padding>
+                    <VBox fx:id="legende" spacing="6.0"/>
+                    <Label text="Derniers effets" style="-fx-font-weight: bold; -fx-font-size: 14px;"/>
+                    <VBox fx:id="journal" spacing="6.0" VBox.vgrow="ALWAYS"
+                          style="-fx-border-color: #c6c0b5; -fx-border-radius: 4; -fx-padding: 8;"/>
+                </VBox>
+            </Tab>
+            <Tab fx:id="ongletChat" text="Chat">
+                <StackPane fx:id="zoneChat">
+                    <padding>
+                        <Insets bottom="12.0" left="12.0" right="8.0" top="12.0"/>
+                    </padding>
+                </StackPane>
+            </Tab>
+        </TabPane>
     </left>
 
     <center>
@@ -42,7 +54,7 @@
             <VBox fx:id="historiqueLancers" prefHeight="170.0" minHeight="170.0"
                   maxHeight="170.0" spacing="2.0"
                   style="-fx-border-color: #c6c0b5; -fx-border-radius: 4; -fx-padding: 8;"/>
-            <Button text="Sauvegarder" onAction="#onSauvegarder"/>
+            <Button fx:id="boutonSauvegarder" text="Sauvegarder" onAction="#onSauvegarder"/>
             <Button text="Menu principal" onAction="#onRetourMenu"/>
         </VBox>
     </right>
