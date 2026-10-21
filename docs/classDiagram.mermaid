@@ -1,92 +1,285 @@
 classDiagram
 direction TB
 
-class Jeu {
-  -List~Joueur~ joueurs
-  -Plateau plateau
-  -De de
-  -int joueurCourant
-  +demarrerPartie()
-  +jouerTour()
-  +passerAuJoueurSuivant()
-  +verifierVictoire() boolean
+class PetitsChevauxApp {
+  +afficherMenu(Stage)$
+  +afficherTirage(Stage, Jeu)$
+  +afficherPartie(Stage, Jeu)$
+  +afficherVictoire(Stage, Jeu)$
+  +afficherErreur(String, Exception)$
 }
-
-class Joueur {
-  -String nom
-  -Couleur couleur
-  -List~Cheval~ chevaux
-  +sortirCheval()
-  +deplacerCheval(Cheval, int)
-  +aGagne() boolean
+class Menu {
+  -nombreJoueurs : Spinner
+  -onNouvellePartie()
+  -onChargerPartie()
+  -onAfficherScores()
 }
-
-class Cheval {
-  -int position
-  -boolean sorti
-  -boolean termine
-  +sortir()
-  +deplacer(int)
-  +rentrerEcurie()
-  +estArrive() boolean
-}
-
-class Plateau {
-  -List~Case~ cases
-  +getCase(int) Case
-  +estDeplacementValide(Cheval, int) boolean
-  +gererCapture(Cheval)
-}
-
-class Case {
-  -int numero
-  -TypeCase type
-  +estSecurisee() boolean
-}
-
-class De {
-  -int valeur
-  +lancer() int
-}
-
 class PartieController {
-  -Jeu jeu
-  +initialiser()
-  +onLancerDe()
-  +onChoisirCheval()
-  +actualiserVue()
+  -jeu : Jeu
+  +setJeu(Jeu)
+  -onLancerDe()
+  -onChevalSelectionne(Cheval)
+  -jouerLesBots()
+  -onSauvegarder()
 }
-
-class PlateauView {
-  -GridPane grille
-  +dessinerPlateau()
-  +afficherChevaux()
-  +mettreAJourPlateau()
+class TirageController {
+  -tirage : TiragePremierJoueur
+  +setJeu(Jeu)
+  -onCommencer()
 }
-
+class VictoireController {
+  +setJeu(Jeu)
+  -onRejouer()
+}
+class TiragePremierJoueur {
+  -manche : int
+  -gagnant : Joueur
+  +getLanceur() Joueur
+  +lancer() int
+  +estTermine() boolean
+  +getGagnant() Joueur
+  +getResultat(Joueur) int
+}
+class Statistiques {
+  -lancers : int
+  -six : int
+  -casesParcourues : int
+  -captures : int
+  -chevauxPerdus : int
+  -toursPasses : int
+  +getMoyenneDe() double
+}
+class ModeJeu {
+  <<enumeration>>
+  CLASSIQUE
+  CASES_SPECIALES
+  EN_LIGNE
+}
+class CaseSpeciale {
+  <<enumeration>>
+  REJOUER
+  TURBO
+  CROC_EN_JAMBE
+  DE_MAUDIT
+  GEL
+  COUP_DU_SORT
+  TREMBLEMENT
+  VENT_ARRIERE
+  +getCategorie() Categorie
+  +getDescription() String
+}
+class EffetsSpeciaux {
+  -malusDe : Map~Joueur,Integer~
+  -toursGeles : Map~Joueur,Integer~
+  ~appliquer(CaseSpeciale, Joueur, Cheval, Joueur) String
+  ~appliquerMalusDe(Joueur, int) int
+  ~consommerGel(Joueur) boolean
+}
+class Evenement {
+  <<record>>
+  joueur : Joueur
+  effet : CaseSpeciale
+  message : String
+}
+class Sauvegarde {
+  +sauvegarder(Jeu, Path)$
+  +charger(Path)$ Jeu
+}
+class Jeu {
+  -joueurCourant : int
+  -etat : Etat
+  -vainqueur : Joueur
+  +lancerDe() int
+  +getChevauxDeplacables() List~Cheval~
+  +jouerCheval(Cheval) boolean
+  +jouerTourBot() int
+  +definirPremierJoueur(Joueur)
+  +getClassement() List~Joueur~
+  +getDuree() Duration
+  +getNombreLancers() int
+  +getHistorique() List~Lancer~
+  +getMode() ModeJeu
+  +getJournal() List~Evenement~
+}
+class Etat {
+  <<enumeration>>
+  ATTENTE_LANCER
+  ATTENTE_CHOIX
+  TERMINEE
+}
+class Lancer {
+  <<record>>
+  joueur : Joueur
+  valeur : int
+}
+class Plateau {
+  +estDeplacementValide(Joueur, Cheval, int, List) boolean
+  +destination(Cheval, int) int
+  +capturerait(Joueur, Cheval, int, List) boolean
+  +gererCapture(Joueur, Cheval, List) List~Joueur~
+  +decalageDepart(Couleur)$ int
+  +placerCasesSpeciales(Random)
+  +getCaseSpeciale(int) CaseSpeciale
+}
+class De {
+  -valeur : int
+  +lancer() int
+  +getValeur() int
+}
+class Joueur {
+  -nom : String
+  -bot : boolean
+  +aGagne() boolean
+  +getChevauxArrives() int
+  +getStatistiques() Statistiques
+}
+class Cheval {
+  -numero : int
+  -position : int
+  +isSorti() boolean
+  +isTermine() boolean
+  +sortir()
+  +rentrerEcurie()
+}
 class Couleur {
   <<enumeration>>
+  JAUNE
   ROUGE
   BLEU
-  JAUNE
   VERT
 }
-
-class TypeCase {
-  <<enumeration>>
-  NORMALE
-  DEPART
-  SECURISEE
-  ARRIVEE
+class PlateauView {
+  +afficherPossibilites(List, int)
+  +dessinerPlateau()
+}
+class Quartier
+class EcurieView
+class ChevalView
+class DeView
+class Rendu {
+  <<utility>>
+  +couleur(Couleur)$ Color
 }
 
-Jeu "1" *-- "2..4" Joueur : contient
-Jeu "1" *-- "1" Plateau : utilise
-Jeu "1" *-- "1" De : utilise
-Joueur "1" *-- "4" Cheval : possede
-Plateau "1" *-- "1..*" Case : contient
-Joueur --> Couleur : possede
-Case --> TypeCase : type
-PartieController --> Jeu : controle
-PartieController --> PlateauView : actualise
-PlateauView --> Plateau : affiche
+%% --- NOUVELLES CLASSES : BDD & PERSISTENCE ---
+
+class DatabaseManager {
+  <<singleton>>
+  -connection : Connection
+  +getConnection()$ Connection
+  +initTables()$
+}
+
+class PartieDAO {
+  +sauvegarderBDD(Jeu) int
+  +chargerBDD(int) Jeu
+  +getPartiesSauvegardees() List~Integer~
+}
+
+class JoueurDAO {
+  +sauvegarderJoueur(Joueur)
+  +chargerJoueur(String) Joueur
+  +getMeilleursScores(int) List~Score~
+}
+
+class Score {
+  <<record>>
+  nomJoueur : String
+  victoires : int
+  partiesJouees : int
+  ratioVictoire : double
+}
+
+%% --- NOUVELLES CLASSES : RESEAU & CHAT ---
+
+class ReseauClient {
+  -socket : Socket
+  -out : ObjectOutputStream
+  -in : ObjectInputStream
+  +connecter(String, int) boolean
+  +deconnecter()
+  +envoyerAction(ActionReseau)
+  +envoyerMessage(Message)
+  -ecouterServeur()
+}
+
+class ServeurJeu {
+  -port : int
+  -clients : List~Socket~
+  +demarrer()
+  +arreter()
+  +diffuserAction(ActionReseau)
+  +diffuserMessage(Message)
+}
+
+class ChatController {
+  -historique : List~Message~
+  +onEnvoyerMessage(String)
+  +afficherNouveauMessage(Message)
+}
+
+class Message {
+  <<record>>
+  auteur : String
+  texte : String
+  timestamp : LocalDateTime
+}
+
+class ActionReseau {
+  <<record>>
+  typeAction : String
+  donneesJSON : String
+}
+
+%% --- RELATIONS EXISTANTES ---
+PetitsChevauxApp ..> Menu : affiche
+PetitsChevauxApp ..> TirageController : affiche
+PetitsChevauxApp ..> PartieController : affiche
+PetitsChevauxApp ..> VictoireController : affiche
+TirageController --> Jeu
+TirageController *-- TiragePremierJoueur
+TiragePremierJoueur *-- De
+TiragePremierJoueur o-- "4" Joueur
+VictoireController --> Jeu
+Menu ..> Jeu : crée
+Menu ..> Sauvegarde : charge (local)
+PartieController --> Jeu
+PartieController --> PlateauView
+PartieController --> DeView
+PartieController ..> Sauvegarde : sauvegarde (local)
+Jeu *-- Plateau
+Jeu *-- De
+Jeu o-- "4" Joueur
+Jeu --> Etat
+Jeu *-- Lancer
+Jeu --> ModeJeu
+Jeu *-- EffetsSpeciaux
+Jeu *-- Evenement
+Plateau o-- CaseSpeciale
+EffetsSpeciaux ..> CaseSpeciale
+Evenement --> CaseSpeciale
+Joueur *-- "4" Cheval
+Joueur *-- Statistiques
+Joueur --> Couleur
+PlateauView *-- "4" Quartier
+PlateauView *-- "4" EcurieView
+PlateauView *-- ChevalView
+PlateauView ..> Plateau
+PlateauView ..> Rendu
+
+%% --- NOUVELLES RELATIONS ---
+Menu ..> PartieDAO : charge (bdd)
+Menu ..> JoueurDAO : charge profils & scores
+JoueurDAO ..> Score : retourne
+PartieDAO --> DatabaseManager : utilise
+JoueurDAO --> DatabaseManager : utilise
+
+PartieController ..> PartieDAO : sauvegarde (bdd)
+PartieController --> ReseauClient : connexion multi
+PartieController *-- ChatController : gere UI chat
+
+ChatController --> ReseauClient : envoie/reçoit
+ReseauClient ..> Message : traite
+ReseauClient ..> ActionReseau : traite
+ServeurJeu ..> Message : diffuse
+ServeurJeu ..> ActionReseau : diffuse
