@@ -1,0 +1,36 @@
+---
+title: Partie en ligne — déroulement d'un coup joué par un invité
+---
+sequenceDiagram
+    actor Bob as Bob (invité)
+    participant PCi as PartieController (Bob)
+    participant Cli as ClientReseau
+    participant Srv as ServeurJeu
+    participant PCh as PartieController (hôte)
+    participant Jeu as Jeu (hôte)
+
+    Note over Srv,Jeu: L'hôte est le seul à avoir le vrai Jeu : il lance les dés et vérifie les coups.
+
+    Bob->>PCi: clic « Lancer le dé »
+    PCi->>Cli: MessageReseau.Lancer()
+    Cli->>Srv: Lancer (socket, objet filtré à la réception)
+    Srv->>PCh: messageRecu(place de Bob, Lancer) via Platform.runLater
+    PCh->>PCh: c'est bien le tour de Bob ?
+    PCh->>Jeu: lancerDe()
+    Jeu-->>PCh: valeur, chevaux jouables
+    PCh->>Srv: diffuser(EtatPartie(Sauvegarde.versTexte(jeu)))
+    Srv->>Cli: EtatPartie
+    Cli->>PCi: recevoirEtat(texte) via Platform.runLater
+    PCi->>PCi: Sauvegarde.depuisTexte → nouveau plateau affiché
+
+    Bob->>PCi: clic sur un cheval qui clignote
+    PCi->>Cli: MessageReseau.ChoisirCheval(numéro)
+    Cli->>Srv: ChoisirCheval
+    Srv->>PCh: messageRecu(place de Bob, ChoisirCheval)
+    PCh->>Jeu: jouerCheval(cheval)
+    PCh->>Srv: diffuser(EtatPartie)
+    Srv->>Cli: EtatPartie
+    Cli->>PCi: affichage à jour
+
+    Note over PCh,Jeu: Les bots jouent chez l'hôte, et chaque coup est diffusé de la même façon.
+    Note over Srv,PCh: Si Bob se déconnecte : depart(place) → un bot reprend ses chevaux.

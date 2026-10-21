@@ -2,6 +2,9 @@ package fr.utbm.petitschevaux;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -81,6 +84,45 @@ public final class Sauvegarde {
     }
 
     public static void sauvegarder(Jeu jeu, Path fichier) throws IOException {
+        try (Writer writer = Files.newBufferedWriter(fichier, StandardCharsets.UTF_8)) {
+            versProprietes(jeu).store(writer, "Partie de petits chevaux");
+        }
+    }
+
+    public static Jeu charger(Path fichier) throws IOException {
+        Properties donnees = new Properties();
+        try (Reader reader = Files.newBufferedReader(fichier, StandardCharsets.UTF_8)) {
+            donnees.load(reader);
+        }
+        return depuisProprietes(donnees);
+    }
+
+    /**
+     * Décrit toute la partie sous forme de texte (même contenu qu'un fichier de sauvegarde).
+     * Sert à envoyer l'état de la partie aux joueurs en ligne.
+     */
+    public static String versTexte(Jeu jeu) {
+        StringWriter texte = new StringWriter();
+        try {
+            versProprietes(jeu).store(texte, null);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e); // impossible avec un StringWriter
+        }
+        return texte.toString();
+    }
+
+    /**
+     * Reconstruit une partie à partir du texte produit par {@link #versTexte(Jeu)}.
+     *
+     * @throws IOException si le texte est invalide
+     */
+    public static Jeu depuisTexte(String texte) throws IOException {
+        Properties donnees = new Properties();
+        donnees.load(new StringReader(texte));
+        return depuisProprietes(donnees);
+    }
+
+    private static Properties versProprietes(Jeu jeu) {
         Properties donnees = new Properties();
         List<Joueur> joueurs = jeu.getJoueurs();
         donnees.setProperty("joueurs", String.valueOf(joueurs.size()));
@@ -109,16 +151,23 @@ public final class Sauvegarde {
                         String.valueOf(chevaux.get(j).getPosition()));
             }
         }
-        try (Writer writer = Files.newBufferedWriter(fichier, StandardCharsets.UTF_8)) {
-            donnees.store(writer, "Partie de petits chevaux");
+        donnees.setProperty("resultatEnregistre", String.valueOf(jeu.isResultatEnregistre()));
+        List<Jeu.Lancer> lancers = jeu.getHistorique();
+        for (int i = 0; i < lancers.size(); i++) {
+            donnees.setProperty("historique." + i + ".couleur", lancers.get(i).joueur().getCouleur().name());
+            donnees.setProperty("historique." + i + ".valeur", String.valueOf(lancers.get(i).valeur()));
         }
+        List<Jeu.Evenement> evenements = jeu.getJournal();
+        for (int i = 0; i < evenements.size(); i++) {
+            Jeu.Evenement evenement = evenements.get(i);
+            donnees.setProperty("journal." + i + ".couleur", evenement.joueur().getCouleur().name());
+            donnees.setProperty("journal." + i + ".effet", evenement.effet().name());
+            donnees.setProperty("journal." + i + ".message", evenement.message());
+        }
+        return donnees;
     }
 
-    public static Jeu charger(Path fichier) throws IOException {
-        Properties donnees = new Properties();
-        try (Reader reader = Files.newBufferedReader(fichier, StandardCharsets.UTF_8)) {
-            donnees.load(reader);
-        }
+    private static Jeu depuisProprietes(Properties donnees) throws IOException {
         try {
             int nombreJoueurs = Integer.parseInt(lire(donnees, "joueurs"));
             List<Joueur> joueurs = new ArrayList<>();
@@ -155,10 +204,39 @@ public final class Sauvegarde {
                     Integer.parseInt(donnees.getProperty("de", "0")),
                     Boolean.parseBoolean(donnees.getProperty("attenteChoix", "false")));
             jeu.restaurerDuree(Long.parseLong(donnees.getProperty("duree", "0")));
+            jeu.restaurerJournaux(lireHistorique(donnees, jeu), lireJournal(donnees, jeu),
+                    Boolean.parseBoolean(donnees.getProperty("resultatEnregistre", "false")));
             return jeu;
         } catch (IllegalArgumentException | IndexOutOfBoundsException e) {
             throw new IOException("Fichier de sauvegarde invalide : " + e.getMessage(), e);
         }
+    }
+
+    private static List<Jeu.Lancer> lireHistorique(Properties donnees, Jeu jeu) {
+        List<Jeu.Lancer> lancers = new ArrayList<>();
+        for (int i = 0; donnees.containsKey("historique." + i + ".couleur"); i++) {
+            Joueur joueur = joueurDeCouleur(jeu, donnees.getProperty("historique." + i + ".couleur"));
+            lancers.add(new Jeu.Lancer(joueur,
+                    Integer.parseInt(donnees.getProperty("historique." + i + ".valeur", "0"))));
+        }
+        return lancers;
+    }
+
+    private static List<Jeu.Evenement> lireJournal(Properties donnees, Jeu jeu) {
+        List<Jeu.Evenement> evenements = new ArrayList<>();
+        for (int i = 0; donnees.containsKey("journal." + i + ".couleur"); i++) {
+            String prefixe = "journal." + i + ".";
+            evenements.add(new Jeu.Evenement(
+                    joueurDeCouleur(jeu, donnees.getProperty(prefixe + "couleur")),
+                    CaseSpeciale.valueOf(donnees.getProperty(prefixe + "effet")),
+                    donnees.getProperty(prefixe + "message", "")));
+        }
+        return evenements;
+    }
+
+    private static Joueur joueurDeCouleur(Jeu jeu, String couleur) {
+        // Les joueurs de Jeu sont rangés dans l'ordre des couleurs.
+        return jeu.getJoueurs().get(Couleur.valueOf(couleur).ordinal());
     }
 
     private static void restaurerCasesSpeciales(Plateau plateau, String valeur) {

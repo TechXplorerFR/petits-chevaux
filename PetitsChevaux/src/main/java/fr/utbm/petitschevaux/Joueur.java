@@ -9,7 +9,7 @@ public class Joueur {
 
     private final String nom;
     private final Couleur couleur;
-    private final boolean bot;
+    private boolean bot;
     private final List<Cheval> chevaux;
     private final Statistiques statistiques = new Statistiques();
 
@@ -53,6 +53,14 @@ public class Joueur {
      */
     public boolean isBot() {
         return bot;
+    }
+
+    /**
+     * Confie ce joueur à l'ordinateur (joueur en ligne déconnecté en cours de partie).
+     * Il ne compte alors plus dans les scores.
+     */
+    void remplacerParBot() {
+        bot = true;
     }
 
     /**

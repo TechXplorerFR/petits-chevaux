@@ -66,16 +66,46 @@ Dans une même chaîne, chaque case ne se déclenche qu'une fois, pour éviter l
 « Rejouer » n'a d'effet que pour le joueur dont c'est le tour. Les bots visent les cases
 bonus et malus et évitent les neutres.
 
+## Jouer en ligne
+
+Sur un même réseau local (même Wi-Fi, ou deux fenêtres du jeu sur le même ordinateur) :
+
+1. Un joueur clique sur **Héberger une partie en ligne**. Son nom, sa couleur (première ligne du
+   menu) et les règles choisies sont utilisés. Le salon affiche l'adresse à donner aux autres.
+2. Les autres cliquent sur **Rejoindre une partie en ligne** et saisissent cette adresse
+   (par exemple `192.168.1.20`, ou `localhost` sur le même ordinateur). Ils reçoivent leur
+   couleur si elle est libre, une autre sinon.
+3. Dans le salon, tout le monde peut discuter. L'hôte clique sur **Lancer la partie** : les places
+   libres sont prises par des bots et le premier joueur est tiré au dé automatiquement.
+
+L'hôte est maître de la partie : lui seul lance les dés et vérifie les coups. Les invités lui
+envoient leurs intentions (lancer, choisir un cheval) et reçoivent l'état complet de la partie
+après chaque coup. Un invité qui se déconnecte est remplacé par un bot ; si l'hôte quitte, la
+partie s'arrête pour tout le monde. Le port utilisé est 5555 : le pare-feu de Windows peut
+demander l'autorisation à l'hôte la première fois.
+
+Le déroulement d'un coup en ligne est décrit dans `docs/sequenceEnLigne.mermaid`.
+
+## Scores
+
+Chaque partie terminée (en local, ou chez l'hôte en ligne) est enregistrée dans une base de
+données H2 créée dans le dossier `donnees/`, là où le jeu est lancé. Le bouton **Scores** du
+menu affiche le classement des joueurs (victoires, parties, taux de réussite) et les dernières
+parties. Seuls les joueurs humains ont un classement, et une partie rechargée depuis une
+sauvegarde n'est jamais comptée deux fois.
+
 ## Organisation du code
 
 Tout est dans le paquet `fr.utbm.petitschevaux` (`PetitsChevaux/src/main/java`).
+Le diagramme de classes complet est dans `docs/classDiagram.mermaid`.
 
 | Rôle | Classes |
 |---|---|
 | Modèle (sans JavaFX) | `Jeu` (tours, bots, victoire), `Plateau` (règles de déplacement, cases spéciales), `Joueur`, `Cheval`, `De`, `Couleur`, `Statistiques`, `TiragePremierJoueur`, `ModeJeu`, `CaseSpeciale`, `EffetsSpeciaux` |
-| Sauvegarde | `Sauvegarde` |
-| Vues | `PlateauView`, `Quartier` (escaliers), `EcurieView`, `ChevalView`, `DeView`, `Rendu` (couleurs et dimensions communes) |
-| Contrôleurs | `Menu` (`menu-view.fxml`), `TirageController` (`tirage-view.fxml`), `PartieController` (`partie-view.fxml`), `VictoireController` (`victoire-view.fxml`) |
+| Persistance | `Sauvegarde` (parties en cours, fichiers `.pcx`), `BaseDeDonnees`, `ScoresDAO`, `Profil`, `ResumePartie` (scores, base H2) |
+| Réseau | `SessionEnLigne`, `ServeurJeu`, `ClientReseau`, `Connexion`, `MessageReseau`, `Place`, `Message` |
+| Vues | `PlateauView`, `Quartier` (escaliers), `EcurieView`, `ChevalView`, `DeView`, `ChatView`, `Rendu` (couleurs et dimensions communes) |
+| Contrôleurs | `Menu` (`menu-view.fxml`), `TirageController` (`tirage-view.fxml`), `PartieController` (`partie-view.fxml`), `SalonController` (`salon-view.fxml`), `VictoireController` (`victoire-view.fxml`), `ScoresController` (`scores-view.fxml`) |
 | Lancement | `Launcher`, `PetitsChevauxApp` |
 
 La position d'un cheval est relative à son joueur : 0 = écurie, 1 à 56 = piste

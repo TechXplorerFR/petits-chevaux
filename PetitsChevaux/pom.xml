@@ -25,6 +25,12 @@
             <artifactId>javafx-fxml</artifactId>
             <version>21.0.6</version>
         </dependency>
+        <dependency>
+            <!-- Base de données embarquée (profils et historique des parties) -->
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>2.2.224</version>
+        </dependency>
 
         <dependency>
             <groupId>org.junit.jupiter</groupId>

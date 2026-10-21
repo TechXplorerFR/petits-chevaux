@@ -56,6 +56,8 @@ public class Jeu {
     private long dureeAvantChargement;
     private long debutChrono = System.currentTimeMillis();
     private Long finChrono;
+    /** Vrai une fois le résultat compté dans la base des scores (pour ne pas le compter deux fois). */
+    private boolean resultatEnregistre;
 
     /**
      * Crée une partie. Les couleurs absentes sont complétées par des bots,
@@ -303,18 +305,33 @@ public class Jeu {
     }
 
     /**
-     * Joue entièrement le tour du joueur courant lorsqu'il s'agit d'un bot :
-     * il lance le dé et avance le cheval le plus avancé possible.
+     * Joue entièrement le tour du joueur courant lorsqu'il s'agit d'un bot : il lance le dé
+     * (sauf si le dé a déjà été lancé, par exemple par un joueur en ligne qui vient d'être
+     * remplacé par un bot) puis choisit un cheval.
      *
      * @return résultat du dé, ou zéro si le joueur courant ne peut pas jouer automatiquement
      */
     public int jouerTourBot() {
-        if (!getJoueurActif().isBot() || !peutLancer()) {
+        if (!getJoueurActif().isBot() || estTerminee()) {
             return 0;
         }
-        int valeur = lancerDe();
+        int valeur = peutLancer() ? lancerDe() : de.getValeur();
         choisirChevalBot().ifPresent(this::jouerCheval);
         return valeur;
+    }
+
+    /**
+     * @return vrai si le résultat de cette partie a déjà été compté dans les scores
+     */
+    public boolean isResultatEnregistre() {
+        return resultatEnregistre;
+    }
+
+    /**
+     * Note que le résultat a été compté dans les scores (appelé par {@link ScoresDAO}).
+     */
+    void marquerResultatEnregistre() {
+        resultatEnregistre = true;
     }
 
     /**
@@ -449,6 +466,24 @@ public class Jeu {
         if (!attenteChoix || calculerChevauxDeplacables().isEmpty()) {
             etat = Etat.ATTENTE_LANCER;
         }
+    }
+
+    /**
+     * Restaure l'historique des lancers, l'historique des effets et l'indicateur de scores
+     * lus dans une sauvegarde (ou reçus de l'hôte d'une partie en ligne).
+     *
+     * @param lancers lancers, du plus récent au plus ancien
+     * @param evenements effets, du plus récent au plus ancien
+     */
+    void restaurerJournaux(List<Lancer> lancers, List<Evenement> evenements, boolean resultatEnregistre) {
+        // Copies d'abord : les listes reçues peuvent être des vues sur historique ou journal.
+        List<Lancer> nouveauxLancers = List.copyOf(lancers);
+        List<Evenement> nouveauxEvenements = List.copyOf(evenements);
+        historique.clear();
+        nouveauxLancers.stream().limit(TAILLE_HISTORIQUE).forEach(historique::addLast);
+        journal.clear();
+        nouveauxEvenements.stream().limit(TAILLE_JOURNAL).forEach(journal::addLast);
+        this.resultatEnregistre = resultatEnregistre;
     }
 
     private void ajouterHistorique(Lancer lancer) {

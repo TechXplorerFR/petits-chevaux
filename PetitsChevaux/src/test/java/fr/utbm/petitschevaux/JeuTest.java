@@ -192,6 +192,20 @@ class JeuTest {
     }
 
     @Test
+    void unBotQuiRemplaceUnJoueurFinitLeTourCommence() {
+        Jeu jeu = jeu(6);
+        Joueur alice = jeu.getJoueurActif();
+        jeu.lancerDe(); // 6 : Alice doit choisir un cheval… puis se déconnecte
+        assertTrue(jeu.isAttenteChoix());
+
+        alice.remplacerParBot();
+        assertEquals(6, jeu.jouerTourBot(), "le bot joue le 6 déjà lancé, sans relancer");
+
+        assertEquals(1, alice.getChevaux().stream().filter(Cheval::isSorti).count());
+        assertTrue(jeu.peutLancer());
+    }
+
+    @Test
     void lHistoriqueGardeLesDerniersLancers() {
         Jeu jeu = jeu(1, 2, 3, 4, 5, 1, 2, 3, 4);
         for (int i = 0; i < 9; i++) {

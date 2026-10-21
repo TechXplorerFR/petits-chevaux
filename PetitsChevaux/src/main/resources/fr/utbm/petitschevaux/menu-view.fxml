@@ -6,6 +6,7 @@
 <?import javafx.scene.control.RadioButton?>
 <?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.Spinner?>
+<?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
@@ -44,7 +45,20 @@
 
     <Separator maxWidth="260.0"/>
 
-    <Button text="Nouvelle partie" onAction="#onNouvellePartie" prefWidth="200.0" defaultButton="true"/>
-    <Button text="Charger une partie" onAction="#onChargerPartie" prefWidth="200.0"/>
-    <Button text="Quitter" onAction="#onQuitter" prefWidth="200.0"/>
+    <GridPane alignment="CENTER" hgap="12.0" vgap="10.0">
+        <Button text="Nouvelle partie" onAction="#onNouvellePartie" prefWidth="220.0" defaultButton="true"
+                GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+        <Button text="Charger une partie" onAction="#onChargerPartie" prefWidth="220.0"
+                GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+        <Button text="Héberger une partie en ligne" onAction="#onHeberger" prefWidth="220.0"
+                GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+        <Button text="Rejoindre une partie en ligne" onAction="#onRejoindre" prefWidth="220.0"
+                GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+        <Button text="Scores" onAction="#onScores" prefWidth="220.0"
+                GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+        <Button text="Quitter" onAction="#onQuitter" prefWidth="220.0"
+                GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+    </GridPane>
+    <Label text="En ligne, le premier joueur ci-dessus est vous : son nom et sa couleur sont utilisés."
+           wrapText="true" style="-fx-text-fill: #6b665e;"/>
 </VBox>

@@ -117,6 +117,26 @@ class SauvegardeTest {
     }
 
     @Test
+    void laVersionTexteConserveLHistoriqueEtLeJournal() throws IOException {
+        Jeu jeu = new Jeu(List.of(new Joueur("Alice", Couleur.JAUNE)), new DeTruque(3, 4, 2), ModeJeu.CASES_SPECIALES);
+        jeu.lancerDe();
+        jeu.lancerDe();
+        jeu.lancerDe();
+        jeu.restaurerJournaux(jeu.getHistorique(), List.of(new Jeu.Evenement(
+                jeu.getJoueurs().get(1), CaseSpeciale.GEL, "Gel : message avec = et : et accents é")), false);
+
+        Jeu copie = Sauvegarde.depuisTexte(Sauvegarde.versTexte(jeu));
+
+        assertEquals(3, copie.getHistorique().size());
+        assertEquals(2, copie.getHistorique().get(0).valeur());
+        assertEquals(Couleur.BLEU, copie.getHistorique().get(0).joueur().getCouleur());
+        assertEquals(jeu.getJournal().get(0).message(), copie.getJournal().get(0).message());
+        assertEquals(CaseSpeciale.GEL, copie.getJournal().get(0).effet());
+        assertEquals(jeu.getPlateau().getCasesSpeciales(), copie.getPlateau().getCasesSpeciales());
+        assertEquals(jeu.getJoueurCourant(), copie.getJoueurCourant());
+    }
+
+    @Test
     void unFichierInvalideEstRefuse() throws IOException {
         Path fichier = dossier.resolve("abime.pcx");
         Files.writeString(fichier, "joueurs=deux\n");
