@@ -53,6 +53,12 @@ public class ScoresDAO {
         return true;
     }
 
+    /**
+     * Enregistre une partie terminée dans la base de données.
+     * @param connexion la connexion à la base de données
+     * @param jeu la partie terminée
+     * @throws SQLException si une erreur survient lors de l'accès à la base de données
+     */
     private void insererPartie(Connection connexion, Jeu jeu) throws SQLException {
         String sql = "INSERT INTO partie (date_fin, mode, vainqueur, vainqueur_bot, duree_ms, lancers)"
                 + " VALUES (?, ?, ?, ?, ?, ?)";
@@ -67,6 +73,14 @@ public class ScoresDAO {
         }
     }
 
+    /**
+     * Incrémente le nombre de parties jouées et de victoires pour un joueur donné.
+     * Si le joueur n'existe pas encore dans la base de données, il est créé
+     * @param connexion la connexion à la base de données
+     * @param nom le nom du joueur
+     * @param victoire vrai si le joueur a gagné la partie, faux sinon
+     * @throws SQLException si une erreur survient lors de l'accès à la base de données
+     */
     private void compterPartie(Connection connexion, String nom, boolean victoire) throws SQLException {
         int victoires = victoire ? 1 : 0;
         String miseAJour = "UPDATE profil SET parties = parties + 1, victoires = victoires + ? WHERE nom = ?";
@@ -86,6 +100,7 @@ public class ScoresDAO {
     }
 
     /**
+     * Retourne la liste des meilleurs joueurs selon leur nombre de victoires et leur ratio de victoires.
      * @param limite nombre maximum de profils
      * @return les meilleurs joueurs : plus de victoires d'abord, puis meilleur ratio, puis nom
      */
@@ -107,6 +122,7 @@ public class ScoresDAO {
     }
 
     /**
+     * Retourne le profil d'un joueur donné, ou un profil vide s'il n'a encore terminé aucune partie.
      * @param nom nom du joueur
      * @return son profil, ou un profil vide s'il n'a encore terminé aucune partie
      */
@@ -124,6 +140,7 @@ public class ScoresDAO {
     }
 
     /**
+     * Retourne la liste des dernières parties terminées, de la plus récente à la plus ancienne.
      * @param limite nombre maximum de parties
      * @return les dernières parties terminées, de la plus récente à la plus ancienne
      */

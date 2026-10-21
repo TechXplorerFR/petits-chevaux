@@ -71,7 +71,7 @@ public class ChatView {
         }
     }
 
-    /** Affiche « [14:32] Alice : salut », avec le nom dans la couleur du joueur. */
+    /** Affiche « [xx:xx] NAME : MESSAGE », avec le nom dans la couleur du joueur. */
     private static final class CelluleMessage extends ListCell<Message> {
         @Override
         protected void updateItem(Message message, boolean vide) {

@@ -24,6 +24,9 @@ public class ScoresController {
     @FXML private GridPane classement;
     @FXML private GridPane parties;
 
+    /**
+     * Initialise l'écran des scores en lisant les meilleurs joueurs et les dernières parties terminées dans la base de données.
+     */
     @FXML
     private void initialize() {
         ScoresDAO scores = new ScoresDAO(BaseDeDonnees.parDefaut());
@@ -40,6 +43,10 @@ public class ScoresController {
         }
     }
 
+    /**
+     * Affiche le classement des meilleurs joueurs dans la grille correspondante.
+     * @param profils la liste des profils des meilleurs joueurs
+     */
     private void afficherClassement(List<Profil> profils) {
         entetes(classement, "", "Joueur", "Victoires", "Parties", "Réussite");
         for (int rang = 0; rang < profils.size(); rang++) {
@@ -53,6 +60,10 @@ public class ScoresController {
         }
     }
 
+    /**
+     * Affiche les dernières parties terminées dans la grille correspondante.
+     * @param liste la liste des résulats des dernières parties
+     */
     private void afficherParties(List<ResumePartie> liste) {
         entetes(parties, "Date", "Gagnant", "Mode", "Durée", "Lancers");
         for (int i = 0; i < liste.size(); i++) {
@@ -66,6 +77,11 @@ public class ScoresController {
         }
     }
 
+    /**
+     * Ajoute les entêtes de colonnes dans la grille donnée.
+     * @param grille la grille dans laquelle ajouter les entêtes
+     * @param textes les textes des entêtes
+     */
     private static void entetes(GridPane grille, String... textes) {
         for (int colonne = 0; colonne < textes.length; colonne++) {
             Label entete = cellule(textes[colonne], true);
@@ -74,24 +90,21 @@ public class ScoresController {
         }
     }
 
-    private static void ligne(GridPane grille, int numero, boolean gras, String... textes) {
-        for (int colonne = 0; colonne < textes.length; colonne++) {
-            grille.add(cellule(textes[colonne], gras), colonne, numero);
-        }
-    }
-
+    /**
+     * Ajoute une ligne de données dans la grille donnée.
+     * @param texte les textes des cellules de la ligne
+     * @param gras si les cellules doivent être en gras
+     * @return la ligne ajoutée
+     */
     private static Label cellule(String texte, boolean gras) {
         Label label = new Label(texte);
         label.setStyle("-fx-padding: 6 10 6 10;" + (gras ? " -fx-font-weight: bold;" : ""));
         return label;
     }
 
-    private static String formaterDuree(Duration duree) {
-        long minutes = duree.toMinutes();
-        long secondes = duree.toSecondsPart();
-        return minutes == 0 ? secondes + " s" : minutes + " min " + secondes + " s";
-    }
-
+    /**
+     * Gère le clic sur le bouton "Retour au menu".
+     */
     @FXML
     private void onRetourMenu() {
         try {
