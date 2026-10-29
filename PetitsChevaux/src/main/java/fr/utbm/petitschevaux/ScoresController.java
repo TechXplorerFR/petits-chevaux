@@ -90,16 +90,22 @@ public class ScoresController {
         }
     }
 
-    /**
-     * Ajoute une ligne de données dans la grille donnée.
-     * @param texte les textes des cellules de la ligne
-     * @param gras si les cellules doivent être en gras
-     * @return la ligne ajoutée
-     */
+    private static void ligne(GridPane grille, int numero, boolean gras, String... textes) {
+        for (int colonne = 0; colonne < textes.length; colonne++) {
+            grille.add(cellule(textes[colonne], gras), colonne, numero);
+        }
+    }
+
     private static Label cellule(String texte, boolean gras) {
         Label label = new Label(texte);
         label.setStyle("-fx-padding: 6 10 6 10;" + (gras ? " -fx-font-weight: bold;" : ""));
         return label;
+    }
+
+    private static String formaterDuree(Duration duree) {
+        long minutes = duree.toMinutes();
+        long secondes = duree.toSecondsPart();
+        return minutes == 0 ? secondes + " s" : minutes + " min " + secondes + " s";
     }
 
     /**
