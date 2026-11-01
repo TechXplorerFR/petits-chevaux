@@ -87,7 +87,7 @@ public class PartieController {
         configurerPanneauGauche();
         if (session != null) {
             ecouterSession();
-            boutonSauvegarder.setDisable(true); // Une partie en ligne ne se sauvegarde pas.
+            boutonSauvegarder.setDisable(true);
         }
         actualiserVue();
         jouerLesBots();
