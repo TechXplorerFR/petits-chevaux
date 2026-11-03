@@ -6,59 +6,51 @@
 <?import javafx.scene.control.RadioButton?>
 <?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.Spinner?>
-<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
-<?import javafx.scene.text.Font?>
 
-<VBox xmlns:fx="http://javafx.com/fxml"
+<VBox xmlns:fx="http://javafx.com/fxml" fx:id="racine"
       fx:controller="fr.utbm.petitschevaux.Menu"
-      alignment="CENTER" spacing="18.0" style="-fx-background-color: #f4f0e7;">
+      alignment="CENTER" spacing="16.0" style="-fx-background-color: #f4f0e7;">
     <padding>
-        <Insets bottom="30.0" left="30.0" right="30.0" top="30.0"/>
+        <Insets bottom="24.0" left="24.0" right="24.0" top="24.0"/>
     </padding>
 
-    <Label text="Petits chevaux">
-        <font>
-            <Font name="System Bold" size="36.0"/>
-        </font>
-    </Label>
+    <!-- Taille du titre adaptée à la largeur de la fenêtre par Menu -->
+    <Label fx:id="titre" text="Petits chevaux" styleClass="titre-menu" graphicTextGap="14.0"/>
 
     <HBox alignment="CENTER" spacing="10.0">
         <Label text="Joueurs humains :"/>
         <Spinner fx:id="nombreJoueurs" prefWidth="80.0"/>
     </HBox>
 
-    <Label text="Les couleurs restantes sont jouées par des bots." style="-fx-text-fill: #6b665e;"/>
+    <Label text="Les couleurs restantes sont jouées par des bots." wrapText="true"
+           style="-fx-text-fill: #6b665e;"/>
 
-    <VBox fx:id="champsJoueurs" alignment="CENTER" spacing="8.0" maxWidth="260.0"/>
+    <VBox fx:id="champsJoueurs" alignment="CENTER" spacing="8.0" maxWidth="280.0"/>
 
-    <Separator maxWidth="260.0"/>
+    <Separator maxWidth="280.0"/>
 
-    <HBox alignment="CENTER" spacing="16.0">
+    <FlowPane alignment="CENTER" hgap="16.0" vgap="8.0">
         <Label text="Mode de jeu :"/>
         <RadioButton fx:id="modeClassique" text="Classique" selected="true"/>
         <RadioButton fx:id="modeCasesSpeciales" text="Cases spéciales"/>
-    </HBox>
-    <Label fx:id="descriptionMode" wrapText="true" maxWidth="440.0" textAlignment="CENTER"
+    </FlowPane>
+    <Label fx:id="descriptionMode" wrapText="true" maxWidth="440.0" textAlignment="CENTER" alignment="CENTER"
            style="-fx-text-fill: #6b665e;"/>
 
-    <Separator maxWidth="260.0"/>
+    <Separator maxWidth="280.0"/>
 
-    <GridPane alignment="CENTER" hgap="12.0" vgap="10.0">
-        <Button text="Nouvelle partie" onAction="#onNouvellePartie" prefWidth="220.0" defaultButton="true"
-                GridPane.columnIndex="0" GridPane.rowIndex="0"/>
-        <Button text="Charger une partie" onAction="#onChargerPartie" prefWidth="220.0"
-                GridPane.columnIndex="1" GridPane.rowIndex="0"/>
-        <Button text="Héberger une partie en ligne" onAction="#onHeberger" prefWidth="220.0"
-                GridPane.columnIndex="0" GridPane.rowIndex="1"/>
-        <Button text="Rejoindre une partie en ligne" onAction="#onRejoindre" prefWidth="220.0"
-                GridPane.columnIndex="1" GridPane.rowIndex="1"/>
-        <Button text="Scores" onAction="#onScores" prefWidth="220.0"
-                GridPane.columnIndex="0" GridPane.rowIndex="2"/>
-        <Button text="Quitter" onAction="#onQuitter" prefWidth="220.0"
-                GridPane.columnIndex="1" GridPane.rowIndex="2"/>
-    </GridPane>
+    <!-- Deux colonnes de boutons, une seule quand la fenêtre est trop étroite -->
+    <FlowPane alignment="CENTER" hgap="12.0" vgap="10.0" maxWidth="490.0">
+        <Button text="Nouvelle partie" onAction="#onNouvellePartie" prefWidth="230.0" defaultButton="true"/>
+        <Button text="Charger une partie" onAction="#onChargerPartie" prefWidth="230.0"/>
+        <Button text="Héberger une partie en ligne" onAction="#onHeberger" prefWidth="230.0"/>
+        <Button text="Rejoindre une partie en ligne" onAction="#onRejoindre" prefWidth="230.0"/>
+        <Button text="Scores" onAction="#onScores" prefWidth="230.0"/>
+        <Button text="Quitter" onAction="#onQuitter" prefWidth="230.0"/>
+    </FlowPane>
     <Label text="En ligne, le premier joueur ci-dessus est vous : son nom et sa couleur sont utilisés."
-           wrapText="true" style="-fx-text-fill: #6b665e;"/>
+           wrapText="true" textAlignment="CENTER" style="-fx-text-fill: #6b665e;"/>
 </VBox>

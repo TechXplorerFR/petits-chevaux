@@ -1,6 +1,13 @@
 package fr.utbm.petitschevaux;
 
+import javafx.animation.Animation;
+import javafx.animation.Interpolator;
+import javafx.animation.PauseTransition;
+import javafx.animation.SequentialTransition;
+import javafx.animation.TranslateTransition;
 import javafx.application.Platform;
+import javafx.geometry.Pos;
+import javafx.scene.control.ContentDisplay;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
@@ -15,7 +22,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.scene.shape.Circle;
+import javafx.util.Duration;
 import javafx.stage.Stage;
 
 import java.io.IOException;
@@ -42,6 +49,14 @@ public class Menu {
         }
     }
 
+    /** Taille du titre selon la largeur de la fenêtre. */
+    private static final double TITRE_MIN = 26;
+    private static final double TITRE_MAX = 46;
+    private static final double TAILLE_CHEVAL_TITRE = 46;
+
+    @FXML private VBox racine;
+    @FXML private Label titre;
+
     @FXML
     private Spinner<Integer> nombreJoueurs;
 
@@ -57,8 +72,13 @@ public class Menu {
     private final List<TextField> nomsJoueurs = new ArrayList<>();
     private final List<ComboBox<Couleur>> couleursJoueurs = new ArrayList<>();
 
+    /** Petits sauts des chevaux du titre, arrêtés en quittant le menu. */
+    private final List<Animation> sautsChevaux = new ArrayList<>();
+
     @FXML
     private void initialize() {
+        preparerTitre();
+        Animations.apparitionEnCascade(List.copyOf(racine.getChildren()));
         nombreJoueurs.setValueFactory(
                 new SpinnerValueFactory.IntegerSpinnerValueFactory(MIN_HUMAINS, MAX_HUMAINS, 2));
 
@@ -86,6 +106,51 @@ public class Menu {
             descriptionMode.setText(modeChoisi().getDescription());
         });
         descriptionMode.setText(modeChoisi().getDescription());
+    }
+
+    /**
+     * Un cheval de chaque couleur au-dessus du titre ; ils sautent chacun leur tour.
+     * Le titre grandit ou rétrécit avec la fenêtre.
+     */
+    private void preparerTitre() {
+        HBox chevaux = new HBox(6);
+        chevaux.setAlignment(Pos.CENTER);
+        Couleur[] couleurs = Couleur.values();
+        for (int i = 0; i < couleurs.length; i++) {
+            PionCheval cheval = new PionCheval(Rendu.couleur(couleurs[i]), TAILLE_CHEVAL_TITRE);
+            chevaux.getChildren().add(cheval);
+            sautsChevaux.add(creerSaut(cheval, i, couleurs.length));
+        }
+        titre.setGraphic(chevaux);
+        titre.setContentDisplay(ContentDisplay.TOP);
+        racine.widthProperty().addListener((obs, avant, largeur) -> {
+            double taille = Math.max(TITRE_MIN, Math.min(TITRE_MAX, largeur.doubleValue() / 20));
+            titre.setStyle("-fx-font-size: " + taille + "px;");
+        });
+        racine.sceneProperty().addListener((obs, avant, scene) -> {
+            if (scene == null) {
+                sautsChevaux.forEach(Animation::stop);
+            }
+        });
+        sautsChevaux.forEach(Animation::play);
+    }
+
+    /** Saut du cheval n° {@code rang}, puis attente que les autres aient sauté, en boucle. */
+    private static Animation creerSaut(PionCheval cheval, int rang, int nombre) {
+        Duration demiSaut = Duration.millis(170);
+        Duration intervalle = demiSaut.multiply(2).add(Duration.millis(260));
+        Duration cycle = intervalle.multiply(nombre).add(Duration.millis(1400));
+        TranslateTransition montee = new TranslateTransition(demiSaut, cheval);
+        montee.setToY(-12);
+        montee.setInterpolator(Interpolator.EASE_OUT);
+        TranslateTransition descente = new TranslateTransition(demiSaut, cheval);
+        descente.setToY(0);
+        descente.setInterpolator(Interpolator.EASE_IN);
+        SequentialTransition saut = new SequentialTransition(montee, descente,
+                new PauseTransition(cycle.subtract(demiSaut.multiply(2))));
+        saut.setDelay(Duration.millis(600).add(intervalle.multiply(rang)));
+        saut.setCycleCount(Animation.INDEFINITE);
+        return saut;
     }
 
     private ModeJeu modeChoisi() {
@@ -126,7 +191,7 @@ public class Menu {
             String nom = couleur.name();
             setText(nom.charAt(0) + nom.substring(1).toLowerCase());
             setTextFill(Rendu.couleur(couleur));
-            setGraphic(new Circle(6, Rendu.couleur(couleur)));
+            setGraphic(new PionCheval(Rendu.couleur(couleur), 18));
         }
     }
 

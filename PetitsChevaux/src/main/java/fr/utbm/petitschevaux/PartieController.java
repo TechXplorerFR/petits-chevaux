@@ -3,14 +3,17 @@ package fr.utbm.petitschevaux;
 import javafx.animation.PauseTransition;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
+import javafx.scene.Group;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
@@ -30,10 +33,19 @@ import java.util.List;
  * Un invité n'envoie que ses intentions (lancer, choisir un cheval) et affiche l'état reçu.</p>
  */
 public class PartieController {
-    private static final Duration DELAI_BOT = Duration.millis(700);
+    /** Pause avant le coup d'un bot (le lancer du dé est ensuite animé). */
+    private static final Duration DELAI_BOT = Duration.millis(450);
     private static final Duration DELAI_VICTOIRE = Duration.millis(1500);
+    /** Largeur de fenêtre sous laquelle le panneau de gauche passe dans la colonne de droite. */
+    private static final double LARGEUR_COMPACTE = 1000;
+    /** Marge laissée autour du plateau, en pixels. */
+    private static final double MARGE_PLATEAU = 12;
+    private static final double LARGEUR_PANNEAU_GAUCHE = 260;
+    private static final double HAUTEUR_PANNEAU_COMPACT = 320;
 
-    @FXML private Pane zonePlateau;
+    @FXML private BorderPane racine;
+    @FXML private VBox colonneDroite;
+    @FXML private StackPane zonePlateau;
     @FXML private Label information;
     @FXML private Label resultatDe;
     @FXML private Button boutonLancer;
@@ -50,6 +62,10 @@ public class PartieController {
 
     private Jeu jeu;
     private PlateauView plateauView;
+    /** Plateau à l'écran : l'ancien reste affiché pendant l'animation du dé chez un invité. */
+    private PlateauView plateauAffiche;
+    /** Derniers lancers déjà affichés, pour repérer un nouveau lancer à animer. */
+    private String lancersAffiches;
     private DeView deView;
     /** Pause avant le prochain coup d'un bot, ou {@code null} si aucun bot n'attend. */
     private PauseTransition pauseBot;
@@ -61,6 +77,54 @@ public class PartieController {
     private SessionEnLigne session;
     private ChatView chat;
     private int messagesNonLus;
+    /** Vrai quand la fenêtre est étroite et que le panneau de gauche est dans la colonne de droite. */
+    private boolean modeCompact;
+
+    @FXML
+    private void initialize() {
+        zonePlateau.widthProperty().addListener((obs, avant, apres) -> ajusterPlateau());
+        zonePlateau.heightProperty().addListener((obs, avant, apres) -> ajusterPlateau());
+        racine.widthProperty().addListener((obs, avant, largeur) -> ajusterDisposition(largeur.doubleValue()));
+    }
+
+    /**
+     * Met le plateau à l'échelle pour qu'il occupe toute la place disponible
+     * sans être coupé, quelle que soit la taille de la fenêtre.
+     */
+    private void ajusterPlateau() {
+        if (plateauAffiche == null) {
+            return;
+        }
+        double place = Math.min(zonePlateau.getWidth(), zonePlateau.getHeight()) - 2 * MARGE_PLATEAU;
+        double echelle = Math.max(0.2, place / Rendu.TAILLE);
+        plateauAffiche.getRoot().setScaleX(echelle);
+        plateauAffiche.getRoot().setScaleY(echelle);
+    }
+
+    /**
+     * Fenêtre large : panneau de gauche | plateau | commandes.
+     * Fenêtre étroite : plateau | commandes, le panneau de gauche passant sous les commandes.
+     */
+    private void ajusterDisposition(double largeur) {
+        boolean compact = largeur < LARGEUR_COMPACTE;
+        if (compact == modeCompact) {
+            return;
+        }
+        modeCompact = compact;
+        if (compact) {
+            racine.setLeft(null);
+            panneauGauche.setMaxWidth(Double.MAX_VALUE);
+            panneauGauche.setPrefHeight(HAUTEUR_PANNEAU_COMPACT);
+            panneauGauche.setMinHeight(HAUTEUR_PANNEAU_COMPACT);
+            colonneDroite.getChildren().add(panneauGauche);
+        } else {
+            colonneDroite.getChildren().remove(panneauGauche);
+            panneauGauche.setMaxWidth(LARGEUR_PANNEAU_GAUCHE);
+            panneauGauche.setPrefHeight(Region.USE_COMPUTED_SIZE);
+            panneauGauche.setMinHeight(Region.USE_COMPUTED_SIZE);
+            racine.setLeft(panneauGauche);
+        }
+    }
 
     /**
      * Branche une partie locale (nouvelle ou chargée) sur la vue.
@@ -93,15 +157,37 @@ public class PartieController {
         jouerLesBots();
     }
 
-    /** Affiche cette partie (au départ, puis côté invité à chaque état reçu). */
+    /**
+     * Branche cette partie (au départ, puis côté invité à chaque état reçu).
+     * Son plateau remplace celui à l'écran au prochain {@link #afficherEtat()}.
+     */
     private void installerJeu(Jeu nouveau) {
-        if (plateauView != null) {
+        if (plateauView != null && plateauView != plateauAffiche) {
             plateauView.arreter();
         }
         jeu = nouveau;
         plateauView = new PlateauView(jeu.getPlateau(), jeu.getJoueurs(), this::onChevalSelectionne);
-        zonePlateau.getChildren().setAll(plateauView.getRoot());
         afficherJoueurs();
+    }
+
+    /** Met à l'écran le plateau de la partie en cours s'il n'y est pas encore. */
+    private void afficherPlateauCourant() {
+        if (plateauAffiche == plateauView) {
+            return;
+        }
+        arreterPlateaux();
+        plateauAffiche = plateauView;
+        // Le groupe prend la taille du plateau mis à l'échelle, ce qui permet de le centrer.
+        zonePlateau.getChildren().setAll(new Group(plateauAffiche.getRoot()));
+        ajusterPlateau();
+    }
+
+    /** Arrête les animations des pions, à appeler avant de quitter l'écran. */
+    private void arreterPlateaux() {
+        if (plateauAffiche != null) {
+            plateauAffiche.arreter();
+        }
+        plateauView.arreter();
     }
 
     /** Onglets de gauche : la légende des cases spéciales et/ou le chat, sinon rien. */
@@ -157,7 +243,7 @@ public class PartieController {
 
     @FXML
     private void onLancerDe() {
-        if (!jeu.peutLancer() || !estLocal(jeu.getJoueurActif())) {
+        if (deView.estEnCours() || !jeu.peutLancer() || !estLocal(jeu.getJoueurActif())) {
             return;
         }
         if (estInvite()) {
@@ -170,7 +256,8 @@ public class PartieController {
     }
 
     private void onChevalSelectionne(Cheval cheval) {
-        if (!estLocal(jeu.getJoueurActif()) || !jeu.getChevauxDeplacables().contains(cheval)) {
+        if (deView.estEnCours() || !estLocal(jeu.getJoueurActif())
+                || !jeu.getChevauxDeplacables().contains(cheval)) {
             return;
         }
         if (estInvite()) {
@@ -247,10 +334,11 @@ public class PartieController {
     /**
      * Fait jouer les bots les uns après les autres, avec une courte pause entre
      * chaque coup pour que les joueurs humains puissent suivre. Chez un invité,
-     * ce sont les bots de l'hôte qui jouent.
+     * ce sont les bots de l'hôte qui jouent. On attend que le dé ait fini de rouler :
+     * la fin de son animation relance cette méthode.
      */
     private void jouerLesBots() {
-        if (estInvite() || pauseBot != null || jeu.estTerminee() || !jeu.getJoueurActif().isBot()) {
+        if (estInvite() || pauseBot != null || deView.estEnCours() || jeu.estTerminee() || !jeu.getJoueurActif().isBot()) {
             return;
         }
         pauseBot = new PauseTransition(DELAI_BOT);
@@ -295,7 +383,8 @@ public class PartieController {
     }
 
     private void ouvrirMenu() {
-        plateauView.arreter();
+        deView.arreter();
+        arreterPlateaux();
         try {
             PetitsChevauxApp.afficherMenu(getStage());
         } catch (IOException e) {
@@ -303,7 +392,44 @@ public class PartieController {
         }
     }
 
+    /**
+     * Met l'écran à jour après un changement de la partie. Si le dé vient d'être lancé,
+     * il roule d'abord : le résultat, les chevaux jouables et le coup d'un bot
+     * n'apparaissent qu'une fois le dé arrêté.
+     */
     private void actualiserVue() {
+        if (session != null && session.estHote()) {
+            session.diffuserEtat(jeu);
+        }
+        String lancers = jeu.getHistorique().stream()
+                .map(lancer -> lancer.joueur().getCouleur() + ":" + lancer.valeur())
+                .reduce("", (a, b) -> a + b + ";");
+        boolean nouveauLancer = lancersAffiches != null && !jeu.getHistorique().isEmpty()
+                && !lancers.equals(lancersAffiches);
+        lancersAffiches = lancers;
+        if (nouveauLancer) {
+            animerLancer(jeu.getHistorique().get(0));
+        } else if (!deView.estEnCours()) {
+            afficherEtat();
+        }
+        // Sinon, la fin du lancer en cours affichera l'état le plus récent.
+    }
+
+    private void animerLancer(Jeu.Lancer lancer) {
+        Joueur lanceur = lancer.joueur();
+        boutonLancer.setDisable(true);
+        resultatDe.setText("Résultat du dé : …");
+        information.setText(lanceur.getNom() + " lance le dé…");
+        information.setTextFill(Rendu.couleur(lanceur.getCouleur()));
+        deView.lancer(lancer.valeur(), () -> {
+            afficherEtat();
+            jouerLesBots();
+        });
+    }
+
+    /** Affiche l'état actuel de la partie : plateau, dé, consignes, historique. */
+    private void afficherEtat() {
+        afficherPlateauCourant();
         int valeurDe = jeu.getDe().getValeur();
         Joueur actif = jeu.getJoueurActif();
         // Seuls les chevaux qu'on peut cliquer depuis cet ordinateur clignotent.
@@ -329,9 +455,6 @@ public class PartieController {
         if (jeu.getMode() == ModeJeu.CASES_SPECIALES) {
             afficherJournal();
         }
-        if (session != null && session.estHote()) {
-            session.diffuserEtat(jeu);
-        }
         if (jeu.estTerminee()) {
             afficherVictoireBientot();
         }
@@ -350,7 +473,7 @@ public class PartieController {
         }
         pauseVictoire = new PauseTransition(DELAI_VICTOIRE);
         pauseVictoire.setOnFinished(event -> {
-            plateauView.arreter();
+            arreterPlateaux();
             try {
                 PetitsChevauxApp.afficherVictoire(getStage(), jeu, session);
             } catch (IOException e) {

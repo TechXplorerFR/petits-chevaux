@@ -5,7 +5,7 @@ import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.layout.HBox;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
@@ -26,7 +26,7 @@ public class TirageController {
     private record Carte(VBox racine, DeView de, Label resultat, Button bouton) {
     }
 
-    @FXML private HBox cartes;
+    @FXML private FlowPane cartes;
     @FXML private Label message;
     @FXML private Button boutonCommencer;
 
@@ -66,11 +66,23 @@ public class TirageController {
         return new Carte(racine, de, resultat, bouton);
     }
 
+    /**
+     * Le joueur dont c'est le tour lance le dé : son dé roule, puis les scores
+     * et la suite du tirage s'affichent.
+     */
     private void lancer() {
-        if (!tirage.estTermine()) {
-            tirage.lancer();
-            actualiser();
+        if (tirage.estTermine() || deEnCours()) {
+            return;
         }
+        Joueur lanceur = tirage.getLanceur();
+        int valeur = tirage.lancer();
+        Carte carte = cartesParJoueur.get(lanceur);
+        carte.bouton().setDisable(true);
+        carte.de().lancer(valeur, this::actualiser);
+    }
+
+    private boolean deEnCours() {
+        return cartesParJoueur.values().stream().anyMatch(carte -> carte.de().estEnCours());
     }
 
     private void actualiser() {
@@ -144,6 +156,7 @@ public class TirageController {
 
     @FXML
     private void onRetourMenu() {
+        cartesParJoueur.values().forEach(carte -> carte.de().arreter());
         if (pauseBot != null) {
             pauseBot.stop();
             pauseBot = null;

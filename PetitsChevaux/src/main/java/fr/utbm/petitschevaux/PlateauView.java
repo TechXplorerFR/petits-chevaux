@@ -79,6 +79,7 @@ public class PlateauView {
     public void arreter() {
         vuesChevaux.forEach(ChevalView::arreter);
         vuesChevaux.clear();
+        ecuries.values().forEach(EcurieView::arreter);
     }
 
     public void dessinerPlateau() {
@@ -138,8 +139,7 @@ public class PlateauView {
                 }
                 ChevalView chevalView = new ChevalView(cheval, joueur.getCouleur(), selection);
                 chevalView.afficherSelection(chevauxDeplacables.contains(cheval));
-                chevalView.getNode().setCenterX(position[0]);
-                chevalView.getNode().setCenterY(position[1]);
+                chevalView.placer(position[0], position[1]);
                 vuesChevaux.add(chevalView);
                 racine.getChildren().add(chevalView.getNode());
             }

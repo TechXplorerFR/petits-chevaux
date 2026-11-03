@@ -6,7 +6,6 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.shape.Circle;
 import javafx.stage.Stage;
 
 import java.io.IOException;
@@ -60,7 +59,7 @@ public class SalonController {
             if (place.couleur() == session.getCouleurLocale()) {
                 precision += " — vous";
             }
-            Label ligne = new Label(place.nom() + precision, new Circle(7, Rendu.couleur(place.couleur())));
+            Label ligne = new Label(place.nom() + precision, new PionCheval(Rendu.couleur(place.couleur()), 20));
             ligne.setStyle("-fx-font-size: 14px;");
             places.getChildren().add(ligne);
         }
