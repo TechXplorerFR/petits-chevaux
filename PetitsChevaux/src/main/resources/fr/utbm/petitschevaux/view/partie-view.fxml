@@ -6,7 +6,10 @@
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.Tab?>
 <?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.ToggleButton?>
+<?import javafx.scene.control.ToggleGroup?>
 <?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
@@ -60,6 +63,21 @@
                 <Label fx:id="information" text="Joueur 1 - lancez le dé" wrapText="true" minHeight="-Infinity"
                        textAlignment="CENTER"/>
                 <Button fx:id="boutonLancer" text="Lancer le dé" onAction="#onLancerDe" defaultButton="true"/>
+                <!-- Vitesse des coups : Rapide et Éclair suppriment l'animation du dé -->
+                <VBox alignment="CENTER" spacing="4.0">
+                    <Label text="Vitesse des coups" style="-fx-font-weight: bold;"/>
+                    <HBox alignment="CENTER" spacing="4.0">
+                        <fx:define>
+                            <ToggleGroup fx:id="groupeVitesse"/>
+                        </fx:define>
+                        <ToggleButton fx:id="vitesseNormale" text="Normale" toggleGroup="$groupeVitesse"
+                                      selected="true" onAction="#onChangerVitesse"/>
+                        <ToggleButton fx:id="vitesseRapide" text="Rapide" toggleGroup="$groupeVitesse"
+                                      onAction="#onChangerVitesse"/>
+                        <ToggleButton fx:id="vitesseEclair" text="Éclair" toggleGroup="$groupeVitesse"
+                                      onAction="#onChangerVitesse"/>
+                    </HBox>
+                </VBox>
                 <VBox fx:id="joueursAffiches" spacing="4.0"/>
                 <VBox fx:id="historiqueLancers" prefHeight="170.0" minHeight="170.0"
                       maxHeight="170.0" spacing="2.0"

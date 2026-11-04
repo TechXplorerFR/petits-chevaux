@@ -26,6 +26,8 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
@@ -50,8 +52,26 @@ import java.util.List;
  * Un invité n'envoie que ses intentions (lancer, choisir un cheval) et affiche l'état reçu.</p>
  */
 public class PartieController {
-    /** Pause avant le coup d'un bot (le lancer du dé est ensuite animé). */
-    private static final Duration DELAI_BOT = Duration.millis(450);
+    /**
+     * Vitesse des coups, choisie avec les boutons sous le dé.
+     * Rapide et Éclair suppriment l'animation du dé : le résultat s'affiche tout de suite.
+     */
+    private enum Vitesse {
+        NORMALE(450, true),
+        RAPIDE(150, false),
+        ECLAIR(20, false);
+
+        /** Pause avant le coup d'un bot. */
+        final Duration delaiBot;
+        /** Vrai si le dé roule avant d'afficher son résultat. */
+        final boolean animerDe;
+
+        Vitesse(double delaiBotMs, boolean animerDe) {
+            this.delaiBot = Duration.millis(delaiBotMs);
+            this.animerDe = animerDe;
+        }
+    }
+
     private static final Duration DELAI_VICTOIRE = Duration.millis(1500);
     /** Largeur de fenêtre sous laquelle le panneau de gauche passe dans la colonne de droite. */
     private static final double LARGEUR_COMPACTE = 1000;
@@ -76,6 +96,12 @@ public class PartieController {
     @FXML private VBox legende;
     @FXML private VBox journal;
     @FXML private StackPane zoneChat;
+    @FXML private ToggleGroup groupeVitesse;
+    @FXML private ToggleButton vitesseNormale;
+    @FXML private ToggleButton vitesseRapide;
+    @FXML private ToggleButton vitesseEclair;
+
+    private Vitesse vitesse = Vitesse.NORMALE;
 
     private Jeu jeu;
     private PlateauView plateauView;
@@ -102,6 +128,37 @@ public class PartieController {
         zonePlateau.widthProperty().addListener((obs, avant, apres) -> ajusterPlateau());
         zonePlateau.heightProperty().addListener((obs, avant, apres) -> ajusterPlateau());
         racine.widthProperty().addListener((obs, avant, largeur) -> ajusterDisposition(largeur.doubleValue()));
+        // Un bouton de vitesse reste toujours enfoncé : recliquer dessus ne le désélectionne pas.
+        groupeVitesse.selectedToggleProperty().addListener((obs, avant, apres) -> {
+            if (apres == null) {
+                groupeVitesse.selectToggle(avant);
+            }
+        });
+    }
+
+    /**
+     * Change la vitesse des coups. Si le dé est en train de rouler, il s'arrête
+     * tout de suite sur son résultat et la partie continue au nouveau rythme.
+     */
+    @FXML
+    private void onChangerVitesse() {
+        if (vitesseEclair.isSelected()) {
+            vitesse = Vitesse.ECLAIR;
+        } else if (vitesseRapide.isSelected()) {
+            vitesse = Vitesse.RAPIDE;
+        } else {
+            vitesse = Vitesse.NORMALE;
+        }
+        if (!vitesse.animerDe && deView.estEnCours()) {
+            deView.arreter();
+            afficherEtat();
+        }
+        if (pauseBot != null) {
+            // La pause en cours reprend avec le nouveau délai.
+            pauseBot.stop();
+            pauseBot = null;
+        }
+        jouerLesBots();
     }
 
     /**
@@ -358,7 +415,7 @@ public class PartieController {
         if (estInvite() || pauseBot != null || deView.estEnCours() || jeu.estTerminee() || !jeu.getJoueurActif().isBot()) {
             return;
         }
-        pauseBot = new PauseTransition(DELAI_BOT);
+        pauseBot = new PauseTransition(vitesse.delaiBot);
         pauseBot.setOnFinished(event -> {
             pauseBot = null;
             jeu.jouerTourBot();
@@ -424,7 +481,7 @@ public class PartieController {
         boolean nouveauLancer = lancersAffiches != null && !jeu.getHistorique().isEmpty()
                 && !lancers.equals(lancersAffiches);
         lancersAffiches = lancers;
-        if (nouveauLancer) {
+        if (nouveauLancer && vitesse.animerDe) {
             animerLancer(jeu.getHistorique().get(0));
         } else if (!deView.estEnCours()) {
             afficherEtat();
