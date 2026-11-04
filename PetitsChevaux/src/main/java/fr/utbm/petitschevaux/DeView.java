@@ -31,6 +31,12 @@ public class DeView {
     private static final double INTERVALLE_FIN_MS = 130;
     private static final double SECOUSSE_MAX_DEGRES = 14;
     private static final Color COULEUR_POINT = Color.DARKSLATEGRAY;
+    private static final Color CONTOUR_REPOS = Color.DARKSLATEGRAY;
+    /** Contour pendant un lancer quand on ne précise pas qui lance. */
+    private static final Color CONTOUR_LANCER = Color.web("#c9a227");
+    private static final double EPAISSEUR_REPOS = 2;
+    /** Contour plus épais pendant un lancer, pour bien voir la couleur du lanceur. */
+    private static final double EPAISSEUR_LANCER = 5;
 
     private static final int[][] POSITIONS = {
             { 0, 0 }, { 1, 0 }, { 2, 0 },
@@ -55,8 +61,8 @@ public class DeView {
     public DeView() {
         fond.setArcWidth(12);
         fond.setArcHeight(12);
-        fond.setStroke(Color.DARKSLATEGRAY);
-        fond.setStrokeWidth(2);
+        fond.setStroke(CONTOUR_REPOS);
+        fond.setStrokeWidth(EPAISSEUR_REPOS);
         points.setAlignment(Pos.CENTER);
         points.setHgap(8);
         points.setVgap(8);
@@ -92,6 +98,18 @@ public class DeView {
      * @param fin action lancée une fois le résultat affiché (peut être {@code null})
      */
     public void lancer(int valeur, Runnable fin) {
+        lancer(valeur, CONTOUR_LANCER, fin);
+    }
+
+    /**
+     * Anime un lancer comme {@link #lancer(int, Runnable)}, avec le contour du dé
+     * dans la couleur de celui qui lance tant que le dé roule.
+     *
+     * @param valeur résultat à afficher à la fin
+     * @param contour couleur du contour pendant le lancer (celle du lanceur)
+     * @param fin action lancée une fois le résultat affiché (peut être {@code null})
+     */
+    public void lancer(int valeur, Color contour, Runnable fin) {
         arreter();
         Timeline defilement = new Timeline();
         double temps = 0;
@@ -134,13 +152,14 @@ public class DeView {
         SequentialTransition lancer = new SequentialTransition(defilement, rebond);
         lancer.setOnFinished(event -> {
             animation = null;
-            fond.setStroke(Color.DARKSLATEGRAY);
+            remettreContour();
             if (fin != null) {
                 fin.run();
             }
         });
         animation = lancer;
-        fond.setStroke(Color.web("#c9a227"));
+        fond.setStroke(contour);
+        fond.setStrokeWidth(EPAISSEUR_LANCER);
         lancer.play();
     }
 
@@ -162,7 +181,13 @@ public class DeView {
         racine.setRotate(0);
         racine.setScaleX(1);
         racine.setScaleY(1);
-        fond.setStroke(Color.DARKSLATEGRAY);
+        remettreContour();
+    }
+
+    /** Remet le contour gris fin du dé au repos. */
+    private void remettreContour() {
+        fond.setStroke(CONTOUR_REPOS);
+        fond.setStrokeWidth(EPAISSEUR_REPOS);
     }
 
     /**

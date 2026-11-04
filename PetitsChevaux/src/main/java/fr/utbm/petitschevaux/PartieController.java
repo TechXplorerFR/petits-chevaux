@@ -421,7 +421,7 @@ public class PartieController {
         resultatDe.setText("Résultat du dé : …");
         information.setText(lanceur.getNom() + " lance le dé…");
         information.setTextFill(Rendu.couleur(lanceur.getCouleur()));
-        deView.lancer(lancer.valeur(), () -> {
+        deView.lancer(lancer.valeur(), Rendu.couleur(lanceur.getCouleur()), () -> {
             afficherEtat();
             jouerLesBots();
         });

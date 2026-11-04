@@ -78,7 +78,7 @@ public class TirageController {
         int valeur = tirage.lancer();
         Carte carte = cartesParJoueur.get(lanceur);
         carte.bouton().setDisable(true);
-        carte.de().lancer(valeur, this::actualiser);
+        carte.de().lancer(valeur, Rendu.couleur(lanceur.getCouleur()), this::actualiser);
     }
 
     private boolean deEnCours() {
