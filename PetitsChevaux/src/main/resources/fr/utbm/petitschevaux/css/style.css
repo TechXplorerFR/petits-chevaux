@@ -1,0 +1,61 @@
+/* Style commun à tous les écrans. */
+
+.root {
+    -fx-font-family: "Segoe UI", "System";
+}
+
+/* Boutons arrondis aux couleurs du plateau ; les animations sont dans Animations.java. */
+.button {
+    -fx-background-color: linear-gradient(to bottom, #ffffff, #ece6da);
+    -fx-background-radius: 9;
+    -fx-border-color: #c6c0b5;
+    -fx-border-radius: 9;
+    -fx-padding: 8 18;
+    -fx-text-fill: #3b3732;
+    -fx-cursor: hand;
+}
+
+.button:hover {
+    -fx-background-color: linear-gradient(to bottom, #ffffff, #f6f1e7);
+    -fx-border-color: #8c857a;
+}
+
+.button:pressed {
+    -fx-background-color: linear-gradient(to bottom, #e6dfd2, #f2ece1);
+}
+
+.button:focused {
+    -fx-border-color: #514c45;
+    -fx-border-width: 1.5;
+}
+
+/* Bouton principal de l'écran (validé par Entrée). */
+.button:default {
+    -fx-background-color: linear-gradient(to bottom, #6b655c, #514c45);
+    -fx-border-color: #3b3732;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.button:default:hover {
+    -fx-background-color: linear-gradient(to bottom, #7a736a, #5d574f);
+}
+
+/* Écrans placés dans une zone défilante quand la fenêtre est trop petite. */
+.ecran-defilant,
+.ecran-defilant > .viewport {
+    -fx-background-color: transparent;
+    -fx-background: #f4f0e7;
+}
+
+.colonne-defilante,
+.colonne-defilante > .viewport {
+    -fx-background-color: transparent;
+    /* -fx-background sert aussi à choisir la couleur du texte : il doit rester clair. */
+    -fx-background: #f4f0e7;
+}
+
+.titre-menu {
+    -fx-font-weight: bold;
+    -fx-text-fill: #3b3732;
+}
