@@ -96,17 +96,31 @@ sauvegarde n'est jamais comptée deux fois.
 
 ## Organisation du code
 
-Tout est dans le paquet `fr.utbm.petitschevaux` (`PetitsChevaux/src/main/java`).
+Le code suit une architecture MVC, avec un sous-paquet par couche sous `fr.utbm.petitschevaux`
+(`PetitsChevaux/src/main/java`). Les tests reprennent les mêmes paquets dans `src/test/java`.
 Le diagramme de classes complet est dans `docs/classDiagram.mermaid`.
 
-| Rôle | Classes |
+```
+fr/utbm/petitschevaux/
+├── Launcher, PetitsChevauxApp   lancement et navigation entre les écrans
+├── model/        règles et état du jeu (sans JavaFX, ne dépend d'aucune autre couche)
+├── view/         composants graphiques JavaFX
+├── controller/   un contrôleur par écran FXML
+├── persistence/  sauvegardes (.pcx) et base H2 des scores
+└── network/      parties en ligne
+```
+
+| Paquet | Classes |
 |---|---|
-| Modèle (sans JavaFX) | `Jeu` (tours, bots, victoire), `Plateau` (règles de déplacement, cases spéciales), `Joueur`, `Cheval`, `De`, `Couleur`, `Statistiques`, `TiragePremierJoueur`, `ModeJeu`, `CaseSpeciale`, `EffetsSpeciaux` |
-| Persistance | `Sauvegarde` (parties en cours, fichiers `.pcx`), `BaseDeDonnees`, `ScoresDAO`, `Profil`, `ResumePartie` (scores, base H2) |
-| Réseau | `SessionEnLigne`, `ServeurJeu`, `ClientReseau`, `Connexion`, `MessageReseau`, `Place`, `Message` |
-| Vues | `PlateauView`, `Quartier` (escaliers), `EcurieView`, `ChevalView`, `DeView`, `ChatView`, `Rendu` (couleurs et dimensions communes) |
-| Contrôleurs | `Menu` (`menu-view.fxml`), `TirageController` (`tirage-view.fxml`), `PartieController` (`partie-view.fxml`), `SalonController` (`salon-view.fxml`), `VictoireController` (`victoire-view.fxml`), `ScoresController` (`scores-view.fxml`) |
-| Lancement | `Launcher`, `PetitsChevauxApp` |
+| `model` | `Jeu` (tours, bots, victoire), `Plateau` (règles de déplacement, cases spéciales), `Joueur`, `Cheval`, `De`, `Couleur`, `Statistiques`, `TiragePremierJoueur`, `ModeJeu`, `CaseSpeciale`, `EffetsSpeciaux`, `Profil`, `ResumePartie` |
+| `persistence` | `Sauvegarde` (parties en cours, fichiers `.pcx`), `BaseDeDonnees`, `ScoresDAO` (scores, base H2) |
+| `network` | `SessionEnLigne`, `ServeurJeu`, `ClientReseau`, `Connexion`, `MessageReseau`, `Place`, `Message` |
+| `view` | `PlateauView`, `QuartierView` (escaliers), `EcurieView`, `ChevalView`, `PionCheval`, `DeView`, `ChatView`, `Rendu` (couleurs et dimensions communes), `Animations` |
+| `controller` | `MenuController` (`menu-view.fxml`), `TirageController` (`tirage-view.fxml`), `PartieController` (`partie-view.fxml`), `SalonController` (`salon-view.fxml`), `VictoireController` (`victoire-view.fxml`), `ScoresController` (`scores-view.fxml`) |
+| (racine) | `Launcher`, `PetitsChevauxApp` |
+
+Ressources (`src/main/resources/fr/utbm/petitschevaux`) : `view/` (écrans FXML), `css/style.css`,
+`images/` (icône).
 
 La position d'un cheval est relative à son joueur : 0 = écurie, 1 à 56 = piste
 (1 = case de départ, 56 = pied de l'escalier), 57 à 62 = marches, 63 = centre.

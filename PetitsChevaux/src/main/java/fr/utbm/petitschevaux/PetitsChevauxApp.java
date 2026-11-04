@@ -1,5 +1,13 @@
 package fr.utbm.petitschevaux;
 
+import fr.utbm.petitschevaux.view.Animations;
+import fr.utbm.petitschevaux.model.Jeu;
+import fr.utbm.petitschevaux.controller.PartieController;
+import fr.utbm.petitschevaux.controller.SalonController;
+import fr.utbm.petitschevaux.network.SessionEnLigne;
+import fr.utbm.petitschevaux.controller.TirageController;
+import fr.utbm.petitschevaux.controller.VictoireController;
+
 import javafx.animation.FadeTransition;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
@@ -29,7 +37,7 @@ public class PetitsChevauxApp extends Application {
     @Override
     public void start(Stage stage) throws IOException {
         stage.setTitle("Petits chevaux");
-        URL icone = PetitsChevauxApp.class.getResource("petits-chevaux.png");
+        URL icone = PetitsChevauxApp.class.getResource("images/petits-chevaux.png");
         if (icone == null) {
             throw new IOException("Icône de l'application introuvable : petits-chevaux.png");
         }
@@ -122,7 +130,7 @@ public class PetitsChevauxApp extends Application {
     }
 
     private static FXMLLoader charger(String vue) {
-        return new FXMLLoader(PetitsChevauxApp.class.getResource(vue));
+        return new FXMLLoader(PetitsChevauxApp.class.getResource("view/" + vue));
     }
 
     private static void afficher(Stage stage, Parent racine) {
@@ -146,7 +154,7 @@ public class PetitsChevauxApp extends Application {
         }
         if (stage.getScene() == null) {
             Scene scene = new Scene(ecran, LARGEUR, HAUTEUR);
-            URL style = PetitsChevauxApp.class.getResource("style.css");
+            URL style = PetitsChevauxApp.class.getResource("css/style.css");
             if (style != null) {
                 scene.getStylesheets().add(style.toExternalForm());
             }

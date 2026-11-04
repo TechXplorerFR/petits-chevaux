@@ -300,7 +300,7 @@ namespace Controleurs {
   class Launcher {
     +main(String[])$
   }
-  class Menu {
+  class MenuController {
     -couleursJoueurs : List~ComboBox~
     -onNouvellePartie()
     -onChargerPartie()
@@ -351,7 +351,7 @@ namespace Vues {
     +dessinerPlateau()
     +arreter()
   }
-  class Quartier {
+  class QuartierView {
     +getDessin() Group
   }
   class EcurieView {
@@ -425,15 +425,15 @@ Connexion ..> MessageReseau : envoie / reçoit
 
 %% --- Contrôleurs ---
 Launcher ..> PetitsChevauxApp : lance
-PetitsChevauxApp ..> Menu : affiche
+PetitsChevauxApp ..> MenuController : affiche
 PetitsChevauxApp ..> TirageController : affiche
 PetitsChevauxApp ..> PartieController : affiche
 PetitsChevauxApp ..> SalonController : affiche
 PetitsChevauxApp ..> VictoireController : affiche
 PetitsChevauxApp ..> ScoresController : affiche
-Menu ..> Jeu : crée
-Menu ..> Sauvegarde : charge
-Menu ..> SessionEnLigne : héberge / rejoint
+MenuController ..> Jeu : crée
+MenuController ..> Sauvegarde : charge
+MenuController ..> SessionEnLigne : héberge / rejoint
 TirageController --> Jeu
 TirageController *-- TiragePremierJoueur
 SalonController --> SessionEnLigne
@@ -450,7 +450,7 @@ VictoireController --> Jeu
 ScoresController ..> ScoresDAO : lit
 
 %% --- Vues ---
-PlateauView *-- "4" Quartier
+PlateauView *-- "4" QuartierView
 PlateauView *-- "4" EcurieView
 PlateauView *-- ChevalView
 PlateauView ..> Plateau

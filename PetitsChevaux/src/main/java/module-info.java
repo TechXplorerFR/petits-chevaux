@@ -6,6 +6,13 @@ module fr.utbm.petitschevaux {
     requires java.sql;
     requires com.h2database;
 
-    opens fr.utbm.petitschevaux to javafx.fxml;
+    // Les contrôleurs sont instanciés et injectés (@FXML) par réflexion par FXMLLoader.
+    opens fr.utbm.petitschevaux.controller to javafx.fxml;
+
     exports fr.utbm.petitschevaux;
+    exports fr.utbm.petitschevaux.model;
+    exports fr.utbm.petitschevaux.view;
+    exports fr.utbm.petitschevaux.controller;
+    exports fr.utbm.petitschevaux.network;
+    exports fr.utbm.petitschevaux.persistence;
 }
