@@ -49,7 +49,7 @@ import java.util.Optional;
  * partie sauvegardée.
  */
 public class MenuController {
-    public static final int MIN_HUMAINS = 1;
+    public static final int MIN_HUMAINS = 0;
     public static final int MAX_HUMAINS = Jeu.MAX_JOUEURS;
 
     /** Une sauvegarde proposée au chargement, affichée par son nom de fichier. */
