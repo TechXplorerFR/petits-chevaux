@@ -3,11 +3,13 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.layout.FlowPane?>
+<?import javafx.scene.control.TabPane?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
+<!-- Classement des joueurs, puis un onglet par mode de jeu (rempli par ScoresController) :
+     moyennes depuis la première partie, dernière partie détaillée et dernières parties. -->
 <VBox xmlns:fx="http://javafx.com/fxml"
       fx:controller="fr.utbm.petitschevaux.controller.ScoresController"
       alignment="TOP_CENTER" spacing="16.0" style="-fx-background-color: #f4f0e7;">
@@ -22,29 +24,14 @@
     </Label>
     <Label fx:id="message" wrapText="true" style="-fx-text-fill: #6b665e;"/>
 
-    <FlowPane alignment="TOP_CENTER" hgap="32.0" vgap="20.0">
-        <VBox spacing="8.0">
-            <Label text="Meilleurs joueurs" style="-fx-font-weight: bold; -fx-font-size: 15px;"/>
-            <GridPane fx:id="classement" style="-fx-background-color: white; -fx-background-radius: 8;"/>
-        </VBox>
-        <VBox spacing="8.0">
-            <Label text="Dernières parties" style="-fx-font-weight: bold; -fx-font-size: 15px;"/>
-            <GridPane fx:id="parties" style="-fx-background-color: white; -fx-background-radius: 8;"/>
-        </VBox>
-    </FlowPane>
-
-    <!-- Statistiques complètes de la dernière partie, ou de celle choisie avec « Détails » -->
-    <VBox fx:id="zoneDetails" spacing="8.0" alignment="TOP_CENTER" visible="false" managed="false">
-        <Label fx:id="titreDetails" style="-fx-font-weight: bold; -fx-font-size: 15px;"/>
-        <GridPane fx:id="details" style="-fx-background-color: white; -fx-background-radius: 8;"/>
+    <VBox spacing="8.0" alignment="TOP_CENTER">
+        <Label text="Meilleurs joueurs" style="-fx-font-weight: bold; -fx-font-size: 15px;"/>
+        <GridPane fx:id="classement" maxWidth="-Infinity"
+                  style="-fx-background-color: white; -fx-background-radius: 8;"/>
     </VBox>
 
-    <!-- Moyennes par joueur et par partie, sur toutes les parties enregistrées -->
-    <VBox fx:id="zoneMoyennes" spacing="8.0" alignment="TOP_CENTER" visible="false" managed="false">
-        <Label text="Moyennes sur toutes les parties" style="-fx-font-weight: bold; -fx-font-size: 15px;"/>
-        <Label fx:id="bilan" style="-fx-text-fill: #6b665e;"/>
-        <GridPane fx:id="moyennes" style="-fx-background-color: white; -fx-background-radius: 8;"/>
-    </VBox>
+    <!-- minHeight = taille préférée : l'onglet n'est jamais écrasé, c'est la page qui défile -->
+    <TabPane fx:id="ongletsModes" tabClosingPolicy="UNAVAILABLE" minHeight="-Infinity"/>
 
     <Button text="Menu principal" onAction="#onRetourMenu" prefWidth="180.0" defaultButton="true"/>
 </VBox>

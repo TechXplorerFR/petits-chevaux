@@ -3,6 +3,7 @@ package fr.utbm.petitschevaux.persistence;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
@@ -54,7 +55,50 @@ public final class BaseDeDonnees {
                 chevaux_perdus INT NOT NULL,
                 cases_speciales INT NOT NULL,
                 PRIMARY KEY (partie_id, couleur)
+            )""",
+            // Totaux depuis la première partie, par mode : ils ne sont jamais effacés,
+            // alors que l'historique ne garde que les dernières parties.
+            """
+            CREATE TABLE IF NOT EXISTS cumul_parties (
+                mode VARCHAR(30) PRIMARY KEY,
+                parties BIGINT NOT NULL,
+                duree_ms BIGINT NOT NULL,
+                lancers BIGINT NOT NULL
+            )""",
+            """
+            CREATE TABLE IF NOT EXISTS cumul_joueurs (
+                mode VARCHAR(30) NOT NULL,
+                groupe VARCHAR(20) NOT NULL,
+                participations BIGINT NOT NULL,
+                chevaux_arrives BIGINT NOT NULL,
+                lancers BIGINT NOT NULL,
+                somme_des BIGINT NOT NULL,
+                six BIGINT NOT NULL,
+                tours_passes BIGINT NOT NULL,
+                sorties BIGINT NOT NULL,
+                cases_parcourues BIGINT NOT NULL,
+                captures BIGINT NOT NULL,
+                chevaux_perdus BIGINT NOT NULL,
+                cases_speciales BIGINT NOT NULL,
+                PRIMARY KEY (mode, groupe)
             )"""
+    };
+
+    /**
+     * Groupes de joueurs pour lesquels des totaux sont tenus, avec la condition SQL
+     * qui les sélectionne dans {@code statistiques_joueur} et le libellé affiché.
+     */
+    static final String[][] GROUPES = {
+            { "TOUS", "TRUE", "Tous les joueurs" },
+            { "HUMAINS", "bot = FALSE", "Humains" },
+            { "BOTS", "bot = TRUE", "Bots" },
+            { "VAINQUEURS", "rang = 1", "Vainqueurs" }
+    };
+
+    /** Colonnes additionnées dans {@code cumul_joueurs} (mêmes noms que dans {@code statistiques_joueur}). */
+    static final String[] COLONNES_CUMULEES = {
+            "chevaux_arrives", "lancers", "somme_des", "six", "tours_passes", "sorties",
+            "cases_parcourues", "captures", "chevaux_perdus", "cases_speciales"
     };
 
     private final String url;
@@ -85,6 +129,7 @@ public final class BaseDeDonnees {
                 for (String table : TABLES) {
                     requete.execute(table);
                 }
+                initialiserCumuls(requete);
             } catch (SQLException e) {
                 connexion.close();
                 throw e;
@@ -92,5 +137,30 @@ public final class BaseDeDonnees {
             tablesCreees = true;
         }
         return connexion;
+    }
+
+    /**
+     * Base créée avant les totaux : ils sont calculés une fois à partir des parties déjà
+     * enregistrées, pour que les moyennes portent bien sur toutes les parties depuis le début.
+     */
+    private static void initialiserCumuls(Statement requete) throws SQLException {
+        try (ResultSet ligne = requete.executeQuery("SELECT COUNT(*) FROM cumul_parties")) {
+            ligne.next();
+            if (ligne.getLong(1) > 0) {
+                return;
+            }
+        }
+        requete.execute("INSERT INTO cumul_parties (mode, parties, duree_ms, lancers)"
+                + " SELECT mode, COUNT(*), SUM(duree_ms), SUM(lancers) FROM partie GROUP BY mode");
+        String colonnes = String.join(", ", COLONNES_CUMULEES);
+        String sommes = String.join(", ", java.util.Arrays.stream(COLONNES_CUMULEES)
+                .map(colonne -> "SUM(s." + colonne + ")").toList());
+        for (String[] groupe : GROUPES) {
+            requete.execute("INSERT INTO cumul_joueurs (mode, groupe, participations, " + colonnes + ")"
+                    + " SELECT p.mode, '" + groupe[0] + "', COUNT(*), " + sommes
+                    + " FROM statistiques_joueur s JOIN partie p ON p.id = s.partie_id"
+                    + " WHERE " + groupe[1] // bot et rang n'existent que dans statistiques_joueur
+                    + " GROUP BY p.mode");
+        }
     }
 }
