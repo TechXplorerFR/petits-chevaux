@@ -41,6 +41,17 @@ public final class Rendu {
     }
 
     /**
+     * Repère visuel d'un joueur, à placer devant son nom : un petit pion de sa couleur.
+     *
+     * @param couleur couleur du joueur
+     * @param taille hauteur du pion en pixels
+     * @return un nouveau pion (un nœud JavaFX ne peut être affiché qu'à un seul endroit)
+     */
+    public static PionCheval pion(Couleur couleur, double taille) {
+        return new PionCheval(couleur(couleur), taille);
+    }
+
+    /**
      * @param couleur couleur d'un joueur
      * @return la teinte au format CSS (#rrggbb), pour les styles JavaFX
      */
