@@ -189,7 +189,12 @@ namespace Persistance {
     +enregistrerPartie(Jeu) boolean
     +meilleursJoueurs(int) List~Profil~
     +profil(String) Profil
-    +dernieresParties(int) List~ResumePartie~
+    +dernieresParties(ModeJeu, int) List~ResumePartie~
+    +statistiquesPartie(int) List~StatistiquesJoueur~
+    +PARTIES_CONSERVEES$ = 10
+    +dernierePartie(ModeJeu) Optional~ResumePartie~
+    +bilanParties(ModeJeu) BilanParties
+    +moyennesStatistiques(ModeJeu) List~MoyennesStatistiques~
   }
   class Profil {
     <<record>>
@@ -200,12 +205,43 @@ namespace Persistance {
   }
   class ResumePartie {
     <<record>>
+    id : int
     fin : LocalDateTime
     mode : ModeJeu
     vainqueur : String
     vainqueurBot : boolean
     duree : Duration
     lancers : int
+  }
+  class StatistiquesJoueur {
+    <<record>>
+    rang : int
+    nom : String
+    couleur : Couleur
+    bot : boolean
+    chevauxArrives : int
+    lancers, sommeDes, six : int
+    toursPasses, sorties : int
+    casesParcourues, captures : int
+    chevauxPerdus, casesSpeciales : int
+    +de(int, Joueur)$ StatistiquesJoueur
+    +vainqueur() boolean
+    +moyenneDe() double
+  }
+  class BilanParties {
+    <<record>>
+    parties : int
+    dureeMoyenne : Duration
+    lancersMoyens : double
+  }
+  class MoyennesStatistiques {
+    <<record>>
+    groupe : String
+    participations : int
+    chevauxArrives, lancers, moyenneDe : double
+    six, toursPasses, sorties : double
+    casesParcourues, captures : double
+    chevauxPerdus, casesSpeciales : double
   }
 }
 
@@ -407,6 +443,10 @@ Sauvegarde ..> Jeu : écrit / relit
 ScoresDAO --> BaseDeDonnees
 ScoresDAO ..> Profil : retourne
 ScoresDAO ..> ResumePartie : retourne
+ScoresDAO ..> StatistiquesJoueur : enregistre et retourne
+ScoresDAO ..> BilanParties : calcule
+ScoresDAO ..> MoyennesStatistiques : calcule
+StatistiquesJoueur ..> Joueur : relevé en fin de partie
 ScoresDAO ..> Jeu : enregistre le résultat
 
 %% --- Réseau ---

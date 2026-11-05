@@ -94,6 +94,25 @@ menu affiche le classement des joueurs (victoires, parties, taux de réussite) e
 parties. Seuls les joueurs humains ont un classement, et une partie rechargée depuis une
 sauvegarde n'est jamais comptée deux fois.
 
+Toutes les statistiques de la partie sont aussi enregistrées pour chaque joueur, bots compris
+(table `statistiques_joueur`) : rang, chevaux arrivés, lancers, moyenne au dé, six, tours passés,
+sorties, cases parcourues, captures, chevaux perdus et cases spéciales.
+
+L'écran Scores a **un onglet par mode** (Classique, Cases spéciales), avec :
+
+- les **moyennes sur toutes les parties** du mode depuis la première : nombre de parties, durée et
+  lancers moyens, puis les statistiques moyennes d'un joueur sur une partie, pour tous les joueurs,
+  les humains, les bots et les vainqueurs ;
+- la **dernière partie jouée**, détaillée joueur par joueur (le bouton **Détails** d'une autre
+  partie l'affiche à sa place) ;
+- l'historique des dernières parties.
+
+Pour ne pas saturer la base, l'historique ne garde que les **10 dernières parties de chaque mode**
+(`ScoresDAO.PARTIES_CONSERVEES`) : les plus anciennes sont effacées avec leurs statistiques
+détaillées. Les moyennes, elles, portent toujours sur toutes les parties : chaque fin de partie
+ajoute ses chiffres à des totaux par mode (tables `cumul_parties` et `cumul_joueurs`) qui ne sont
+jamais effacés. Le classement des joueurs n'oublie rien non plus.
+
 ## Organisation du code
 
 Le code suit une architecture MVC, avec un sous-paquet par couche sous `fr.utbm.petitschevaux`
@@ -112,7 +131,7 @@ fr/utbm/petitschevaux/
 
 | Paquet | Classes |
 |---|---|
-| `model` | `Jeu` (tours, bots, victoire), `Plateau` (règles de déplacement, cases spéciales), `Joueur`, `Cheval`, `De`, `Couleur`, `Statistiques`, `TiragePremierJoueur`, `ModeJeu`, `CaseSpeciale`, `EffetsSpeciaux`, `Profil`, `ResumePartie` |
+| `model` | `Jeu` (tours, bots, victoire), `Plateau` (règles de déplacement, cases spéciales), `Joueur`, `Cheval`, `De`, `Couleur`, `Statistiques`, `TiragePremierJoueur`, `ModeJeu`, `CaseSpeciale`, `EffetsSpeciaux`, `Profil`, `ResumePartie`, `StatistiquesJoueur`, `BilanParties`, `MoyennesStatistiques` |
 | `persistence` | `Sauvegarde` (parties en cours, fichiers `.pcx`), `BaseDeDonnees`, `ScoresDAO` (scores, base H2) |
 | `network` | `SessionEnLigne`, `ServeurJeu`, `ClientReseau`, `Connexion`, `MessageReseau`, `Place`, `Message` |
 | `view` | `PlateauView`, `QuartierView` (escaliers), `EcurieView`, `ChevalView`, `PionCheval`, `DeView`, `ChatView`, `Rendu` (couleurs et dimensions communes), `Animations` |
