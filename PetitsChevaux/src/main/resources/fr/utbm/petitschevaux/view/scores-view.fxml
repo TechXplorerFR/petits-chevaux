@@ -33,5 +33,11 @@
         </VBox>
     </FlowPane>
 
+    <!-- Statistiques complètes d'une partie, affichées en cliquant sur « Détails » -->
+    <VBox fx:id="zoneDetails" spacing="8.0" alignment="TOP_CENTER" visible="false" managed="false">
+        <Label fx:id="titreDetails" style="-fx-font-weight: bold; -fx-font-size: 15px;"/>
+        <GridPane fx:id="details" style="-fx-background-color: white; -fx-background-radius: 8;"/>
+    </VBox>
+
     <Button text="Menu principal" onAction="#onRetourMenu" prefWidth="180.0" defaultButton="true"/>
 </VBox>

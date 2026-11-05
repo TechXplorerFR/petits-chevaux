@@ -4,11 +4,15 @@ import fr.utbm.petitschevaux.persistence.BaseDeDonnees;
 import fr.utbm.petitschevaux.PetitsChevauxApp;
 import fr.utbm.petitschevaux.model.Profil;
 import fr.utbm.petitschevaux.model.ResumePartie;
+import fr.utbm.petitschevaux.model.StatistiquesJoueur;
 import fr.utbm.petitschevaux.persistence.ScoresDAO;
+import fr.utbm.petitschevaux.view.Rendu;
 
 import javafx.fxml.FXML;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 import java.io.IOException;
@@ -29,13 +33,17 @@ public class ScoresController {
     @FXML private Label message;
     @FXML private GridPane classement;
     @FXML private GridPane parties;
+    @FXML private VBox zoneDetails;
+    @FXML private Label titreDetails;
+    @FXML private GridPane details;
+
+    private final ScoresDAO scores = new ScoresDAO(BaseDeDonnees.parDefaut());
 
     /**
      * Initialise l'écran des scores en lisant les meilleurs joueurs et les dernières parties terminées dans la base de données.
      */
     @FXML
     private void initialize() {
-        ScoresDAO scores = new ScoresDAO(BaseDeDonnees.parDefaut());
         try {
             List<Profil> profils = scores.meilleursJoueurs(NOMBRE_JOUEURS);
             List<ResumePartie> dernieres = scores.dernieresParties(NOMBRE_PARTIES);
@@ -71,7 +79,7 @@ public class ScoresController {
      * @param liste la liste des résulats des dernières parties
      */
     private void afficherParties(List<ResumePartie> liste) {
-        entetes(parties, "Date", "Gagnant", "Mode", "Durée", "Lancers");
+        entetes(parties, "Date", "Gagnant", "Mode", "Durée", "Lancers", "");
         for (int i = 0; i < liste.size(); i++) {
             ResumePartie partie = liste.get(i);
             ligne(parties, i + 1, false,
@@ -80,6 +88,54 @@ public class ScoresController {
                     partie.mode().getLibelle(),
                     formaterDuree(partie.duree()),
                     String.valueOf(partie.lancers()));
+            Button voir = new Button("Détails");
+            voir.setOnAction(event -> afficherDetails(partie));
+            parties.add(voir, 5, i + 1);
+        }
+    }
+
+    /**
+     * Affiche toutes les statistiques enregistrées pour une partie : une ligne par joueur,
+     * du vainqueur au dernier.
+     */
+    private void afficherDetails(ResumePartie partie) {
+        details.getChildren().clear();
+        zoneDetails.setVisible(true);
+        zoneDetails.setManaged(true);
+        titreDetails.setText("Partie du " + partie.fin().format(FORMAT_DATE) + " (" + partie.mode().getLibelle() + ")");
+        List<StatistiquesJoueur> lignes;
+        try {
+            lignes = scores.statistiquesPartie(partie.id());
+        } catch (SQLException e) {
+            titreDetails.setText("Impossible de lire les statistiques : " + e.getMessage());
+            return;
+        }
+        if (lignes.isEmpty()) {
+            titreDetails.setText(titreDetails.getText() + " : statistiques détaillées non disponibles"
+                    + " (partie enregistrée avant leur ajout).");
+            return;
+        }
+        entetes(details, "", "Joueur", "Arrivés", "Lancers", "Moyenne", "Six", "Tours passés",
+                "Sorties", "Cases", "Captures", "Perdus", "Cases spéciales");
+        for (int i = 0; i < lignes.size(); i++) {
+            StatistiquesJoueur stats = lignes.get(i);
+            ligne(details, i + 1, stats.vainqueur(),
+                    stats.rang() + (stats.rang() == 1 ? "er" : "e"),
+                    null,
+                    stats.chevauxArrives() + "/4",
+                    String.valueOf(stats.lancers()),
+                    String.format(Locale.FRANCE, "%.2f", stats.moyenneDe()),
+                    String.valueOf(stats.six()),
+                    String.valueOf(stats.toursPasses()),
+                    String.valueOf(stats.sorties()),
+                    String.valueOf(stats.casesParcourues()),
+                    String.valueOf(stats.captures()),
+                    String.valueOf(stats.chevauxPerdus()),
+                    String.valueOf(stats.casesSpeciales()));
+            Label nom = cellule(stats.nom() + (stats.bot() ? " (bot)" : ""), true);
+            nom.setGraphic(Rendu.pion(stats.couleur(), 18));
+            nom.setTextFill(Rendu.couleur(stats.couleur()));
+            details.add(nom, 1, i + 1);
         }
     }
 
@@ -98,7 +154,9 @@ public class ScoresController {
 
     private static void ligne(GridPane grille, int numero, boolean gras, String... textes) {
         for (int colonne = 0; colonne < textes.length; colonne++) {
-            grille.add(cellule(textes[colonne], gras), colonne, numero);
+            if (textes[colonne] != null) { // null : cellule remplie à part
+                grille.add(cellule(textes[colonne], gras), colonne, numero);
+            }
         }
     }
 
