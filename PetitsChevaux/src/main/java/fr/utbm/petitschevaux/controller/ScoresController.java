@@ -2,6 +2,8 @@ package fr.utbm.petitschevaux.controller;
 
 import fr.utbm.petitschevaux.persistence.BaseDeDonnees;
 import fr.utbm.petitschevaux.PetitsChevauxApp;
+import fr.utbm.petitschevaux.model.BilanParties;
+import fr.utbm.petitschevaux.model.MoyennesStatistiques;
 import fr.utbm.petitschevaux.model.Profil;
 import fr.utbm.petitschevaux.model.ResumePartie;
 import fr.utbm.petitschevaux.model.StatistiquesJoueur;
@@ -36,8 +38,13 @@ public class ScoresController {
     @FXML private VBox zoneDetails;
     @FXML private Label titreDetails;
     @FXML private GridPane details;
+    @FXML private VBox zoneMoyennes;
+    @FXML private Label bilan;
+    @FXML private GridPane moyennes;
 
     private final ScoresDAO scores = new ScoresDAO(BaseDeDonnees.parDefaut());
+    /** Partie terminée la plus récente, ou {@code null} s'il n'y en a aucune. */
+    private ResumePartie dernierePartie;
 
     /**
      * Initialise l'écran des scores en lisant les meilleurs joueurs et les dernières parties terminées dans la base de données.
@@ -47,11 +54,17 @@ public class ScoresController {
         try {
             List<Profil> profils = scores.meilleursJoueurs(NOMBRE_JOUEURS);
             List<ResumePartie> dernieres = scores.dernieresParties(NOMBRE_PARTIES);
-            message.setText(profils.isEmpty()
+            message.setText(dernieres.isEmpty()
                     ? "Aucune partie terminée pour l'instant : jouez jusqu'au bout pour apparaître ici."
                     : "Seules les parties terminées comptent. Les bots n'ont pas de classement.");
             afficherClassement(profils);
             afficherParties(dernieres);
+            // La dernière partie jouée est détaillée d'office ; « Détails » en affiche une autre.
+            if (!dernieres.isEmpty()) {
+                dernierePartie = dernieres.get(0);
+                afficherDetails(dernierePartie);
+            }
+            afficherMoyennes(scores.bilanParties(), scores.moyennesStatistiques());
         } catch (SQLException e) {
             message.setText("Impossible de lire les scores : " + e.getMessage());
         }
@@ -95,6 +108,46 @@ public class ScoresController {
     }
 
     /**
+     * Affiche le bilan de toutes les parties et, par groupe de joueurs, les statistiques
+     * moyennes d'un joueur sur une partie.
+     */
+    private void afficherMoyennes(BilanParties bilanParties, List<MoyennesStatistiques> lignes) {
+        if (bilanParties.parties() == 0) {
+            return;
+        }
+        zoneMoyennes.setVisible(true);
+        zoneMoyennes.setManaged(true);
+        bilan.setText(bilanParties.parties() + (bilanParties.parties() == 1 ? " partie terminée" : " parties terminées")
+                + " · durée moyenne " + formaterDuree(bilanParties.dureeMoyenne())
+                + " · " + nombre(bilanParties.lancersMoyens()) + " lancers par partie");
+        if (lignes.isEmpty()) {
+            return;
+        }
+        entetes(moyennes, "Par joueur et par partie", "Arrivés", "Lancers", "Moyenne", "Six", "Tours passés",
+                "Sorties", "Cases", "Captures", "Perdus", "Cases spéciales");
+        for (int i = 0; i < lignes.size(); i++) {
+            MoyennesStatistiques m = lignes.get(i);
+            ligne(moyennes, i + 1, i == 0,
+                    m.groupe() + " (" + m.participations() + ")",
+                    nombre(m.chevauxArrives()) + "/4",
+                    nombre(m.lancers()),
+                    String.format(Locale.FRANCE, "%.2f", m.moyenneDe()),
+                    nombre(m.six()),
+                    nombre(m.toursPasses()),
+                    nombre(m.sorties()),
+                    nombre(m.casesParcourues()),
+                    nombre(m.captures()),
+                    nombre(m.chevauxPerdus()),
+                    nombre(m.casesSpeciales()));
+        }
+    }
+
+    /** Une moyenne arrondie à un chiffre après la virgule. */
+    private static String nombre(double valeur) {
+        return String.format(Locale.FRANCE, "%.1f", valeur);
+    }
+
+    /**
      * Affiche toutes les statistiques enregistrées pour une partie : une ligne par joueur,
      * du vainqueur au dernier.
      */
@@ -102,7 +155,9 @@ public class ScoresController {
         details.getChildren().clear();
         zoneDetails.setVisible(true);
         zoneDetails.setManaged(true);
-        titreDetails.setText("Partie du " + partie.fin().format(FORMAT_DATE) + " (" + partie.mode().getLibelle() + ")");
+        titreDetails.setText((partie.equals(dernierePartie) ?"Dernière partie, le " : "Partie du ")
+                + partie.fin().format(FORMAT_DATE) + " (" + partie.mode().getLibelle() + ", "
+                + formaterDuree(partie.duree()) + ", " + partie.lancers() + " lancers)");
         List<StatistiquesJoueur> lignes;
         try {
             lignes = scores.statistiquesPartie(partie.id());
