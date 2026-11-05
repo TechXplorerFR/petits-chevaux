@@ -34,6 +34,26 @@ public final class BaseDeDonnees {
                 vainqueur_bot BOOLEAN NOT NULL,
                 duree_ms BIGINT NOT NULL,
                 lancers INT NOT NULL
+            )""",
+            // Statistiques de chaque joueur (bots compris) d'une partie terminée.
+            """
+            CREATE TABLE IF NOT EXISTS statistiques_joueur (
+                partie_id INT NOT NULL REFERENCES partie(id) ON DELETE CASCADE,
+                rang INT NOT NULL,
+                nom VARCHAR(100) NOT NULL,
+                couleur VARCHAR(10) NOT NULL,
+                bot BOOLEAN NOT NULL,
+                chevaux_arrives INT NOT NULL,
+                lancers INT NOT NULL,
+                somme_des INT NOT NULL,
+                six INT NOT NULL,
+                tours_passes INT NOT NULL,
+                sorties INT NOT NULL,
+                cases_parcourues INT NOT NULL,
+                captures INT NOT NULL,
+                chevaux_perdus INT NOT NULL,
+                cases_speciales INT NOT NULL,
+                PRIMARY KEY (partie_id, couleur)
             )"""
     };
 

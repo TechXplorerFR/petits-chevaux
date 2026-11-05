@@ -25,6 +25,11 @@ public class Statistiques {
         return six;
     }
 
+    /** @return somme des valeurs obtenues au dé */
+    public int getSommeDes() {
+        return sommeDes;
+    }
+
     /** @return moyenne des lancers, ou 0 sans lancer */
     public double getMoyenneDe() {
         return lancers == 0 ? 0 : (double) sommeDes / lancers;

@@ -9,6 +9,7 @@ import fr.utbm.petitschevaux.model.ModeJeu;
 import fr.utbm.petitschevaux.model.Plateau;
 import fr.utbm.petitschevaux.model.Profil;
 import fr.utbm.petitschevaux.model.ResumePartie;
+import fr.utbm.petitschevaux.model.StatistiquesJoueur;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -95,6 +96,27 @@ class ScoresDAOTest {
         assertFalse(parties.get(0).vainqueurBot());
         assertEquals(ModeJeu.CLASSIQUE, parties.get(0).mode());
         assertEquals(1, parties.get(0).lancers());
+    }
+
+    @Test
+    void toutesLesStatistiquesDesJoueursSontEnregistrees() throws SQLException {
+        Jeu jeu = partieGagneePar("Bob");
+        scores.enregistrerPartie(jeu);
+
+        int id = scores.dernieresParties(1).get(0).id();
+        List<StatistiquesJoueur> lignes = scores.statistiquesPartie(id);
+
+        assertEquals(4, lignes.size(), "une ligne par joueur, bots compris");
+        StatistiquesJoueur bob = lignes.get(0);
+        assertEquals(StatistiquesJoueur.de(1, jeu.getJoueurs().get(Couleur.ROUGE.ordinal())), bob);
+        assertTrue(bob.vainqueur());
+        assertEquals(4, bob.chevauxArrives());
+        assertEquals(1, bob.lancers());
+        assertEquals(1, bob.six());
+        assertEquals(6.0, bob.moyenneDe(), 1e-9);
+        assertEquals(List.of(1, 2, 3, 4), lignes.stream().map(StatistiquesJoueur::rang).toList());
+        assertEquals(2, lignes.stream().filter(StatistiquesJoueur::bot).count());
+        assertTrue(scores.statistiquesPartie(id + 1).isEmpty());
     }
 
     @Test
