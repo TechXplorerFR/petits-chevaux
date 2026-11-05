@@ -25,19 +25,24 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ScoresDAOTest {
+    private String url;
     private ScoresDAO scores;
 
     @BeforeEach
     void creerBaseEnMemoire() {
         // Une base en mémoire différente par test, conservée tant que le test tourne.
-        scores = new ScoresDAO(new BaseDeDonnees(
-                "jdbc:h2:mem:" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1"));
+        url = "jdbc:h2:mem:" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1";
+        scores = new ScoresDAO(new BaseDeDonnees(url));
     }
 
-    /** Partie à deux humains (Alice jaune, Bob rouge) qu'Alice vient de gagner. */
+    /** Partie classique à deux humains (Alice jaune, Bob rouge) que {@code gagnant} vient de gagner. */
     private static Jeu partieGagneePar(String gagnant) {
+        return partieGagneePar(gagnant, ModeJeu.CLASSIQUE);
+    }
+
+    private static Jeu partieGagneePar(String gagnant, ModeJeu mode) {
         Jeu jeu = new Jeu(List.of(new Joueur("Alice", Couleur.JAUNE), new Joueur("Bob", Couleur.ROUGE)),
-                new DeTruque(6), ModeJeu.CLASSIQUE);
+                new DeTruque(6), mode);
         Joueur vainqueur = jeu.getJoueurs().stream()
                 .filter(joueur -> joueur.getNom().equals(gagnant)).findFirst().orElseThrow();
         jeu.definirPremierJoueur(vainqueur);
@@ -65,7 +70,7 @@ class ScoresDAOTest {
         assertTrue(scores.enregistrerPartie(jeu));
         assertFalse(scores.enregistrerPartie(jeu));
         assertEquals(1, scores.profil("Alice").parties());
-        assertEquals(1, scores.dernieresParties(10).size());
+        assertEquals(1, scores.dernieresParties(ModeJeu.CLASSIQUE, 10).size());
     }
 
     @Test
@@ -92,7 +97,7 @@ class ScoresDAOTest {
         scores.enregistrerPartie(partieGagneePar("Alice"));
         scores.enregistrerPartie(partieGagneePar("Bob"));
 
-        List<ResumePartie> parties = scores.dernieresParties(10);
+        List<ResumePartie> parties = scores.dernieresParties(ModeJeu.CLASSIQUE, 10);
         assertEquals("Bob", parties.get(0).vainqueur());
         assertEquals("Alice", parties.get(1).vainqueur());
         assertFalse(parties.get(0).vainqueurBot());
@@ -105,7 +110,7 @@ class ScoresDAOTest {
         Jeu jeu = partieGagneePar("Bob");
         scores.enregistrerPartie(jeu);
 
-        int id = scores.dernieresParties(1).get(0).id();
+        int id = scores.dernieresParties(ModeJeu.CLASSIQUE, 1).get(0).id();
         List<StatistiquesJoueur> lignes = scores.statistiquesPartie(id);
 
         assertEquals(4, lignes.size(), "une ligne par joueur, bots compris");
@@ -123,19 +128,19 @@ class ScoresDAOTest {
 
     @Test
     void lesMoyennesPortentSurToutesLesParties() throws SQLException {
-        assertEquals(0, scores.bilanParties().parties());
-        assertTrue(scores.moyennesStatistiques().isEmpty());
-        assertTrue(scores.dernierePartie().isEmpty());
+        assertEquals(0, scores.bilanParties(ModeJeu.CLASSIQUE).parties());
+        assertTrue(scores.moyennesStatistiques(ModeJeu.CLASSIQUE).isEmpty());
+        assertTrue(scores.dernierePartie(ModeJeu.CLASSIQUE).isEmpty());
 
         scores.enregistrerPartie(partieGagneePar("Alice"));
         scores.enregistrerPartie(partieGagneePar("Bob"));
 
-        BilanParties bilan = scores.bilanParties();
+        BilanParties bilan = scores.bilanParties(ModeJeu.CLASSIQUE);
         assertEquals(2, bilan.parties());
         assertEquals(1.0, bilan.lancersMoyens(), 1e-9);
-        assertEquals("Bob", scores.dernierePartie().orElseThrow().vainqueur());
+        assertEquals("Bob", scores.dernierePartie(ModeJeu.CLASSIQUE).orElseThrow().vainqueur());
 
-        List<MoyennesStatistiques> moyennes = scores.moyennesStatistiques();
+        List<MoyennesStatistiques> moyennes = scores.moyennesStatistiques(ModeJeu.CLASSIQUE);
         assertEquals(List.of("Tous les joueurs", "Humains", "Bots", "Vainqueurs"),
                 moyennes.stream().map(MoyennesStatistiques::groupe).toList());
         MoyennesStatistiques tous = moyennes.get(0);
@@ -146,6 +151,67 @@ class ScoresDAOTest {
         assertEquals(2, vainqueurs.participations());
         assertEquals(4.0, vainqueurs.chevauxArrives(), 1e-9);
         assertEquals(4, moyennes.get(1).participations(), "Alice et Bob, deux fois");
+    }
+
+    @Test
+    void chaqueModeASesPropresStatistiques() throws SQLException {
+        scores.enregistrerPartie(partieGagneePar("Alice", ModeJeu.CLASSIQUE));
+        scores.enregistrerPartie(partieGagneePar("Bob", ModeJeu.CASES_SPECIALES));
+        scores.enregistrerPartie(partieGagneePar("Bob", ModeJeu.CASES_SPECIALES));
+
+        assertEquals(1, scores.bilanParties(ModeJeu.CLASSIQUE).parties());
+        assertEquals(2, scores.bilanParties(ModeJeu.CASES_SPECIALES).parties());
+        assertEquals("Alice", scores.dernierePartie(ModeJeu.CLASSIQUE).orElseThrow().vainqueur());
+        assertEquals(2, scores.dernieresParties(ModeJeu.CASES_SPECIALES, 10).size());
+        assertEquals(4, scores.moyennesStatistiques(ModeJeu.CLASSIQUE).get(0).participations());
+        assertEquals(8, scores.moyennesStatistiques(ModeJeu.CASES_SPECIALES).get(0).participations());
+    }
+
+    @Test
+    void lHistoriqueGardeDixPartiesMaisLesMoyennesLesComptentToutes() throws SQLException {
+        int total = ScoresDAO.PARTIES_CONSERVEES + 3;
+        for (int i = 0; i < total; i++) {
+            scores.enregistrerPartie(partieGagneePar(i % 2 == 0 ? "Alice" : "Bob"));
+        }
+        scores.enregistrerPartie(partieGagneePar("Alice", ModeJeu.CASES_SPECIALES));
+
+        List<ResumePartie> historique = scores.dernieresParties(ModeJeu.CLASSIQUE, 100);
+        assertEquals(ScoresDAO.PARTIES_CONSERVEES, historique.size(), "les plus anciennes sont effacées");
+        assertEquals(1, scores.dernieresParties(ModeJeu.CASES_SPECIALES, 100).size(),
+                "l'autre mode n'est pas touché");
+        try (var connexion = new BaseDeDonnees(url).ouvrir();
+                var requete = connexion.createStatement();
+                var ligne = requete.executeQuery("SELECT COUNT(*) FROM statistiques_joueur")) {
+            ligne.next();
+            assertEquals(4 * (ScoresDAO.PARTIES_CONSERVEES + 1), ligne.getInt(1),
+                    "les statistiques détaillées partent avec leur partie");
+        }
+
+        assertEquals(total, scores.bilanParties(ModeJeu.CLASSIQUE).parties());
+        MoyennesStatistiques vainqueurs = scores.moyennesStatistiques(ModeJeu.CLASSIQUE).get(3);
+        assertEquals(total, vainqueurs.participations(), "toutes les parties depuis le début");
+        assertEquals(total + 1, scores.profil("Alice").parties(),
+                "le classement (tous modes) non plus n'oublie rien");
+    }
+
+    @Test
+    void uneAncienneBaseRetrouveSesTotauxAPartirDeSesParties() throws SQLException {
+        scores.enregistrerPartie(partieGagneePar("Alice"));
+        scores.enregistrerPartie(partieGagneePar("Bob"));
+        // Base créée avant les totaux : ils sont vides alors que des parties existent.
+        try (var connexion = new BaseDeDonnees(url).ouvrir();
+                var requete = connexion.createStatement()) {
+            requete.execute("DELETE FROM cumul_parties");
+            requete.execute("DELETE FROM cumul_joueurs");
+        }
+
+        ScoresDAO relance = new ScoresDAO(new BaseDeDonnees(url));
+
+        assertEquals(2, relance.bilanParties(ModeJeu.CLASSIQUE).parties());
+        List<MoyennesStatistiques> moyennes = relance.moyennesStatistiques(ModeJeu.CLASSIQUE);
+        assertEquals(8, moyennes.get(0).participations());
+        assertEquals(2, moyennes.get(3).participations());
+        assertEquals(6.0, moyennes.get(0).moyenneDe(), 1e-9);
     }
 
     @Test
