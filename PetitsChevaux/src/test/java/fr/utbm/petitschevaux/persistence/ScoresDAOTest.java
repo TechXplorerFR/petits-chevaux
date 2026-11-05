@@ -1,11 +1,13 @@
 package fr.utbm.petitschevaux.persistence;
 
+import fr.utbm.petitschevaux.model.BilanParties;
 import fr.utbm.petitschevaux.model.Cheval;
 import fr.utbm.petitschevaux.model.Couleur;
 import fr.utbm.petitschevaux.model.DeTruque;
 import fr.utbm.petitschevaux.model.Jeu;
 import fr.utbm.petitschevaux.model.Joueur;
 import fr.utbm.petitschevaux.model.ModeJeu;
+import fr.utbm.petitschevaux.model.MoyennesStatistiques;
 import fr.utbm.petitschevaux.model.Plateau;
 import fr.utbm.petitschevaux.model.Profil;
 import fr.utbm.petitschevaux.model.ResumePartie;
@@ -117,6 +119,33 @@ class ScoresDAOTest {
         assertEquals(List.of(1, 2, 3, 4), lignes.stream().map(StatistiquesJoueur::rang).toList());
         assertEquals(2, lignes.stream().filter(StatistiquesJoueur::bot).count());
         assertTrue(scores.statistiquesPartie(id + 1).isEmpty());
+    }
+
+    @Test
+    void lesMoyennesPortentSurToutesLesParties() throws SQLException {
+        assertEquals(0, scores.bilanParties().parties());
+        assertTrue(scores.moyennesStatistiques().isEmpty());
+        assertTrue(scores.dernierePartie().isEmpty());
+
+        scores.enregistrerPartie(partieGagneePar("Alice"));
+        scores.enregistrerPartie(partieGagneePar("Bob"));
+
+        BilanParties bilan = scores.bilanParties();
+        assertEquals(2, bilan.parties());
+        assertEquals(1.0, bilan.lancersMoyens(), 1e-9);
+        assertEquals("Bob", scores.dernierePartie().orElseThrow().vainqueur());
+
+        List<MoyennesStatistiques> moyennes = scores.moyennesStatistiques();
+        assertEquals(List.of("Tous les joueurs", "Humains", "Bots", "Vainqueurs"),
+                moyennes.stream().map(MoyennesStatistiques::groupe).toList());
+        MoyennesStatistiques tous = moyennes.get(0);
+        assertEquals(8, tous.participations(), "4 joueurs dans chacune des 2 parties");
+        assertEquals(0.25, tous.lancers(), 1e-9, "un seul lancer par partie, pour 4 joueurs");
+        assertEquals(6.0, tous.moyenneDe(), 1e-9);
+        MoyennesStatistiques vainqueurs = moyennes.get(3);
+        assertEquals(2, vainqueurs.participations());
+        assertEquals(4.0, vainqueurs.chevauxArrives(), 1e-9);
+        assertEquals(4, moyennes.get(1).participations(), "Alice et Bob, deux fois");
     }
 
     @Test

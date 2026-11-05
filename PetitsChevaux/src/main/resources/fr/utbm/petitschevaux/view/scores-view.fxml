@@ -33,10 +33,17 @@
         </VBox>
     </FlowPane>
 
-    <!-- Statistiques complètes d'une partie, affichées en cliquant sur « Détails » -->
+    <!-- Statistiques complètes de la dernière partie, ou de celle choisie avec « Détails » -->
     <VBox fx:id="zoneDetails" spacing="8.0" alignment="TOP_CENTER" visible="false" managed="false">
         <Label fx:id="titreDetails" style="-fx-font-weight: bold; -fx-font-size: 15px;"/>
         <GridPane fx:id="details" style="-fx-background-color: white; -fx-background-radius: 8;"/>
+    </VBox>
+
+    <!-- Moyennes par joueur et par partie, sur toutes les parties enregistrées -->
+    <VBox fx:id="zoneMoyennes" spacing="8.0" alignment="TOP_CENTER" visible="false" managed="false">
+        <Label text="Moyennes sur toutes les parties" style="-fx-font-weight: bold; -fx-font-size: 15px;"/>
+        <Label fx:id="bilan" style="-fx-text-fill: #6b665e;"/>
+        <GridPane fx:id="moyennes" style="-fx-background-color: white; -fx-background-radius: 8;"/>
     </VBox>
 
     <Button text="Menu principal" onAction="#onRetourMenu" prefWidth="180.0" defaultButton="true"/>

@@ -1,6 +1,8 @@
 package fr.utbm.petitschevaux.persistence;
 
+import fr.utbm.petitschevaux.model.BilanParties;
 import fr.utbm.petitschevaux.model.Couleur;
+import fr.utbm.petitschevaux.model.MoyennesStatistiques;
 import fr.utbm.petitschevaux.model.Jeu;
 import fr.utbm.petitschevaux.model.Joueur;
 import fr.utbm.petitschevaux.model.ModeJeu;
@@ -18,6 +20,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Enregistre les parties terminées et fournit le classement des joueurs.
@@ -121,6 +124,70 @@ public class ScoresDAO {
             }
             requete.executeBatch();
         }
+    }
+
+    /**
+     * @return la dernière partie terminée, ou vide si aucune partie n'a été enregistrée
+     */
+    public Optional<ResumePartie> dernierePartie() throws SQLException {
+        return dernieresParties(1).stream().findFirst();
+    }
+
+    /**
+     * @return le nombre de parties terminées, leur durée moyenne et leur nombre moyen de lancers
+     */
+    public BilanParties bilanParties() throws SQLException {
+        String sql = "SELECT COUNT(*), AVG(CAST(duree_ms AS DOUBLE)), AVG(CAST(lancers AS DOUBLE)) FROM partie";
+        try (Connection connexion = base.ouvrir();
+                PreparedStatement requete = connexion.prepareStatement(sql);
+                ResultSet ligne = requete.executeQuery()) {
+            ligne.next();
+            return new BilanParties(ligne.getInt(1), Duration.ofMillis(Math.round(ligne.getDouble(2))),
+                    ligne.getDouble(3));
+        }
+    }
+
+    /**
+     * Statistiques moyennes d'un joueur sur une partie, calculées sur toutes les parties
+     * enregistrées, pour tous les joueurs puis par groupe : humains, bots et vainqueurs.
+     * Les groupes sans aucune partie sont omis.
+     *
+     * @return une ligne par groupe
+     */
+    public List<MoyennesStatistiques> moyennesStatistiques() throws SQLException {
+        List<MoyennesStatistiques> moyennes = new ArrayList<>();
+        String[][] groupes = {
+                { "Tous les joueurs", "TRUE" },
+                { "Humains", "bot = FALSE" },
+                { "Bots", "bot = TRUE" },
+                { "Vainqueurs", "rang = 1" }
+        };
+        try (Connection connexion = base.ouvrir()) {
+            for (String[] groupe : groupes) {
+                // Le filtre est une constante de cette méthode, jamais une saisie : pas d'injection possible.
+                String sql = "SELECT COUNT(*), AVG(CAST(chevaux_arrives AS DOUBLE)), AVG(CAST(lancers AS DOUBLE)),"
+                        + " SUM(somme_des), SUM(lancers), AVG(CAST(six AS DOUBLE)),"
+                        + " AVG(CAST(tours_passes AS DOUBLE)), AVG(CAST(sorties AS DOUBLE)),"
+                        + " AVG(CAST(cases_parcourues AS DOUBLE)), AVG(CAST(captures AS DOUBLE)),"
+                        + " AVG(CAST(chevaux_perdus AS DOUBLE)), AVG(CAST(cases_speciales AS DOUBLE))"
+                        + " FROM statistiques_joueur WHERE " + groupe[1];
+                try (PreparedStatement requete = connexion.prepareStatement(sql);
+                        ResultSet ligne = requete.executeQuery()) {
+                    ligne.next();
+                    int nombre = ligne.getInt(1);
+                    if (nombre == 0) {
+                        continue;
+                    }
+                    long totalLancers = ligne.getLong(5);
+                    double moyenneDe = totalLancers == 0 ? 0 : (double) ligne.getLong(4) / totalLancers;
+                    moyennes.add(new MoyennesStatistiques(groupe[0], nombre, ligne.getDouble(2),
+                            ligne.getDouble(3), moyenneDe, ligne.getDouble(6), ligne.getDouble(7),
+                            ligne.getDouble(8), ligne.getDouble(9), ligne.getDouble(10),
+                            ligne.getDouble(11), ligne.getDouble(12)));
+                }
+            }
+        }
+        return moyennes;
     }
 
     /**
