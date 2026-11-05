@@ -58,7 +58,7 @@ public class TirageController {
     }
 
     private Carte creerCarte(Joueur joueur) {
-        Label nom = new Label(joueur.getNom());
+        Label nom = new Label(joueur.getNom(), Rendu.pion(joueur.getCouleur(), 22));
         nom.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
         nom.setTextFill(Rendu.couleur(joueur.getCouleur()));
         Label type = new Label(joueur.isBot() ? "bot" : "humain");

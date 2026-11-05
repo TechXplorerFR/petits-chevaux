@@ -4,6 +4,7 @@ import fr.utbm.petitschevaux.persistence.BaseDeDonnees;
 import fr.utbm.petitschevaux.model.CaseSpeciale;
 import fr.utbm.petitschevaux.view.ChatView;
 import fr.utbm.petitschevaux.model.Cheval;
+import fr.utbm.petitschevaux.model.Couleur;
 import fr.utbm.petitschevaux.view.DeView;
 import fr.utbm.petitschevaux.model.Jeu;
 import fr.utbm.petitschevaux.model.Joueur;
@@ -438,6 +439,7 @@ public class PartieController {
         resultatDe.setText("Résultat du dé : …");
         information.setText(lanceur.getNom() + " lance le dé…");
         information.setTextFill(Rendu.couleur(lanceur.getCouleur()));
+        information.setGraphic(Rendu.pion(lanceur.getCouleur(), 20));
         deView.lancer(lancer.valeur(), Rendu.couleur(lanceur.getCouleur()), () -> {
             afficherEtat();
             jouerLesBots();
@@ -463,8 +465,9 @@ public class PartieController {
                 case TERMINEE -> jeu.getVainqueur().getNom() + " a gagné la partie !";
             });
         }
-        information.setTextFill(Rendu.couleur(jeu.estTerminee()
-                ? jeu.getVainqueur().getCouleur() : actif.getCouleur()));
+        Couleur couleurAffichee = jeu.estTerminee() ? jeu.getVainqueur().getCouleur() : actif.getCouleur();
+        information.setTextFill(Rendu.couleur(couleurAffichee));
+        information.setGraphic(Rendu.pion(couleurAffichee, 20));
         boutonLancer.setDisable(!jeu.peutLancer() || !estLocal(actif));
         resultatDe.setText("Résultat du dé : " + (valeurDe == 0 ? "-" : valeurDe));
         deView.afficher(valeurDe);
@@ -516,7 +519,8 @@ public class PartieController {
         historiqueLancers.getChildren().setAll(
                 new Label(Jeu.TAILLE_HISTORIQUE + " derniers lancers"));
         for (Jeu.Lancer lancer : jeu.getHistorique()) {
-            Label ligne = new Label("• " + lancer.joueur().getNom() + " : " + lancer.valeur());
+            Label ligne = new Label(lancer.joueur().getNom() + " : " + lancer.valeur(),
+                    Rendu.pion(lancer.joueur().getCouleur(), 14));
             ligne.setTextFill(Rendu.couleur(lancer.joueur().getCouleur()));
             historiqueLancers.getChildren().add(ligne);
         }
@@ -585,7 +589,7 @@ public class PartieController {
             String precision = joueur.isBot() ? " (bot)"
                     : session == null ? ""
                     : joueur.getCouleur() == session.getCouleurLocale() ? " (vous)" : " (en ligne)";
-            Label nom = new Label(joueur.getNom() + precision);
+            Label nom = new Label(joueur.getNom() + precision, Rendu.pion(joueur.getCouleur(), 18));
             nom.setTextFill(Rendu.couleur(joueur.getCouleur()));
             joueursAffiches.getChildren().add(nom);
         }

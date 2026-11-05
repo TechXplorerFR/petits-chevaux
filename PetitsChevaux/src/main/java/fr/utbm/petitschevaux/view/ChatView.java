@@ -92,6 +92,11 @@ public class ChatView {
                 texte.setStyle("-fx-font-style: italic;");
             }
             TextFlow ligne = new TextFlow(heure, auteur, texte);
+            if (!message.estSysteme() && message.couleur() != null) {
+                // Repère de couleur devant le nom de l'auteur.
+                ligne.getChildren().add(1, Rendu.pion(message.couleur(), 14));
+                ligne.getChildren().add(2, new Text(" "));
+            }
             // Retour à la ligne dans la largeur de la liste.
             ligne.maxWidthProperty().bind(getListView().widthProperty().subtract(30));
             setGraphic(ligne);

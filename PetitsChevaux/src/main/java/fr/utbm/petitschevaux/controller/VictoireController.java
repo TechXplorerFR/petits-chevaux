@@ -113,6 +113,7 @@ public class VictoireController {
             Statistiques stats = joueur.getStatistiques();
             Label nom = cellule(joueur.getNom() + (joueur.isBot() ? " (bot)" : ""), true);
             nom.setTextFill(Rendu.couleur(joueur.getCouleur()));
+            nom.setGraphic(Rendu.pion(joueur.getCouleur(), 18));
             String[] valeurs = {
                     (rang + 1) + (rang == 0 ? "er" : "e"), null,
                     joueur.getChevauxArrives() + "/" + Joueur.NOMBRE_CHEVAUX,
@@ -179,7 +180,7 @@ public class VictoireController {
     private VBox badge(String titre, Joueur joueur, String detail) {
         Label libelle = new Label(titre);
         libelle.setStyle("-fx-text-fill: #6b665e;");
-        Label nom = new Label(joueur.getNom());
+        Label nom = new Label(joueur.getNom(), Rendu.pion(joueur.getCouleur(), 16));
         nom.setStyle("-fx-font-weight: bold;");
         nom.setTextFill(Rendu.couleur(joueur.getCouleur()));
         VBox badge = new VBox(2, libelle, nom, new Label(detail));

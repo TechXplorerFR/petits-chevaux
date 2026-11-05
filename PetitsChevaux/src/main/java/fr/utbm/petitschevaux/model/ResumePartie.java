@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 /**
  * Résumé d'une partie terminée, tel qu'enregistré dans l'historique.
  *
+ * @param id identifiant de la partie dans la base, pour lire ses statistiques détaillées
  * @param fin date et heure de fin de la partie
  * @param mode mode de jeu
  * @param vainqueur nom du gagnant
@@ -13,6 +14,6 @@ import java.time.LocalDateTime;
  * @param duree temps de jeu
  * @param lancers nombre total de lancers de dé
  */
-public record ResumePartie(LocalDateTime fin, ModeJeu mode, String vainqueur, boolean vainqueurBot,
+public record ResumePartie(int id, LocalDateTime fin, ModeJeu mode, String vainqueur, boolean vainqueurBot,
         Duration duree, int lancers) {
 }
